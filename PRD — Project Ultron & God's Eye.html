@@ -1,0 +1,395 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Product Requirement Document</h1>
+<h2>Project Ultron &amp; God's Eye — Autonomous Security Operations Center (SOC) Agent</h2>
+<p><strong>Version:</strong> 1.0 | <strong>Type:</strong> Hackathon MVP → Production-track platform
+<strong>Status:</strong> Approved for build</p>
+<hr>
+<h2>1. Executive Summary</h2>
+<p>Ultron &amp; God's Eye is an offline-first, autonomous endpoint and local-network Security Operations Center. It fuses real-time telemetry ingestion (God Eye), AI-driven reasoning powered by the <code>google-antigravity</code> agent SDK (Ultron Core), sub-second automated containment (Autonomous Shields), and a live cyberpunk command dashboard with a built-in attack range for demo-safe validation. The goal is a single running process that can detect, reason about, explain, and neutralize a threat on a local machine/subnet with no cloud dependency for detection or response — only the reasoning layer optionally calls out via the Antigravity/Gemini API.</p>
+<p><strong>Demo promise:</strong> press a &quot;Simulate SSH Brute-Force&quot; button → watch God Eye detect it → Ultron classify and MITRE-tag it in plain English → Shields block the IP in under 500ms → dashboard shows the whole chain end-to-end.</p>
+<h2>2. Problem Statement</h2>
+<p>Traditional SOC tooling (Splunk, QRadar, etc.) is heavy, cloud-dependent, expensive, and reactive — a human still has to read the alert and decide. Small teams and individual machines have no equivalent of an autonomous, explainable, locally-run defense agent that both reasons about intent (via an LLM agent loop) and acts (via OS-level containment) within the same trust boundary.</p>
+<h2>3. Goals &amp; Success Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Metric</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Real-time detection</td>
+<td>New rogue network asset or canary touch detected within 2s</td>
+</tr>
+<tr>
+<td>AI reasoning quality</td>
+<td>Every incident gets a plain-English summary + correct MITRE tactic tag</td>
+</tr>
+<tr>
+<td>Containment speed</td>
+<td>Detection → Shield action latency <strong>&lt; 500ms</strong> (displayed live)</td>
+</tr>
+<tr>
+<td>Explainability</td>
+<td>Full chronological, immutable incident timeline reconstructable for any incident</td>
+</tr>
+<tr>
+<td>Demo safety</td>
+<td>All simulated attacks confined to <code>127.0.0.1</code> / isolated range, zero risk to judges' network</td>
+</tr>
+<tr>
+<td>Autonomy control</td>
+<td>One toggle switches between fully autonomous response and human-approval-gated response</td>
+</tr>
+</tbody>
+</table>
+<h2>4. Scope</h2>
+<p><strong>In scope (hackathon build):</strong></p>
+<ul>
+<li>Single-host + local-subnet monitoring (God Eye)</li>
+<li>Antigravity-agent-powered log parsing, scoring, MITRE tagging (Ultron Core)</li>
+<li>Local firewall/process containment (Shields)</li>
+<li>SQLite persistence, no external DB dependency</li>
+<li>CustomTkinter dark/cyberpunk dashboard</li>
+<li>Loopback-only attack simulator for stage demo</li>
+<li>Voice alerts via <code>pyttsx3</code></li>
+</ul>
+<p><strong>Out of scope (post-hackathon roadmap):</strong></p>
+<ul>
+<li>Multi-host distributed swarm coordination</li>
+<li>Cloud SIEM export / long-term log retention</li>
+<li>Full computer-vision intruder detection (stubbed as a module hook for v2)</li>
+<li>Automated PDF/Markdown executive report generation (stubbed as a module hook for v2)</li>
+</ul>
+<h2>5. System Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                  COMMAND CENTER UI (Module 4)                │
+│        Dashboard · Range Simulator · Voice Alerts            │
+└───────────────▲───────────────────────────────▲──────────────┘
+                 │ reads/writes                  │ triggers
+┌────────────────┴─────────┐      ┌──────────────┴─────────────┐
+│   ULTRON CORE (Module 2)  │◄────►│  AUTONOMOUS SHIELDS (Mod 3) │
+│  google-antigravity agent │ acts │  Firewall · Process Kill    │
+│  Risk scoring · MITRE tag │      │  Host Quarantine            │
+└────────────────▲──────────┘      └──────────────▲──────────────┘
+                 │ structured events              │ logs actions
+┌────────────────┴─────────────────────────────────┴─────────────┐
+│                    GOD EYE (Module 1)                           │
+│   ARP Radar · Canary Watchdog · Honeypot Socket                 │
+└───────────────────────────────────────────────────────────────┘
+                             │
+                    ┌────────┴────────┐
+                    │  SQLite (local) │
+                    └─────────────────┘
+</code></pre>
+<h2>6. Functional Requirements by Module</h2>
+<h3>Module 1 — God Eye (Sensory &amp; Ingestion)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GE-01</td>
+<td>Continuous ARP-based subnet scan (<code>scapy</code>) resolving IP, MAC, vendor OUI lookup; writes to <code>network_assets</code></td>
+</tr>
+<tr>
+<td>GE-02</td>
+<td>Flag any newly-seen MAC not present in <code>network_assets.is_authorized</code> as a telemetry event</td>
+</tr>
+<tr>
+<td>GE-03</td>
+<td><code>watchdog</code>-based canary file monitor on decoy files in <code>Documents/</code>, <code>Desktop/</code>; on modify/delete, resolve the touching PID via <code>psutil</code> open-file handles within 50ms</td>
+</tr>
+<tr>
+<td>GE-04</td>
+<td>Honeypot listener on port 21 (and configurable others) via raw <code>socket</code>; any inbound connection = instant <code>telemetry_events</code> row with <code>source_module='honeypot'</code></td>
+</tr>
+<tr>
+<td>GE-05</td>
+<td>All three sensors run on independent daemon threads feeding a shared thread-safe event queue consumed by Ultron Core</td>
+</tr>
+</tbody>
+</table>
+<h3>Module 2 — Ultron Core (Cognition, via <code>google-antigravity</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UC-01</td>
+<td>An <code>Agent</code> (from <code>google.antigravity</code>) configured with system instructions specialized for SOC log triage consumes queued telemetry and returns structured JSON: <code>{risk_score, mitre_tactic, mitre_id, summary, recommended_action}</code></td>
+</tr>
+<tr>
+<td>UC-02</td>
+<td>Risk scoring 0–100 mapped to Low/Medium/High/Critical bands, weighted by: attack velocity (events/sec from same source), historical repeat-offender count, and asset criticality flag</td>
+</tr>
+<tr>
+<td>UC-03</td>
+<td>MITRE ATT&amp;CK auto-mapping table for at least: Brute Force (T1110), Network Service Discovery (T1046), Data Encrypted for Impact (T1486), Exploitation of Remote Services (T1210)</td>
+</tr>
+<tr>
+<td>UC-04</td>
+<td>Event correlation: events from the same <code>suspicious_ip</code> within a rolling window are merged into one <code>incidents</code> row rather than duplicated</td>
+</tr>
+<tr>
+<td>UC-05</td>
+<td>On Critical severity, trigger <code>pyttsx3</code> voice line on a dedicated non-blocking thread</td>
+</tr>
+<tr>
+<td>UC-06</td>
+<td>Agent policy config uses Antigravity's <code>hooks.policy</code> (<code>deny</code>, <code>allow</code>, <code>ask_user</code>) so the reasoning agent itself never directly executes OS actions — it only recommends; Module 3 executes</td>
+</tr>
+</tbody>
+</table>
+<h3>Module 3 — Autonomous Shields (Active Defense)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AS-01</td>
+<td>Firewall block: <code>subprocess</code> call to <code>iptables -A INPUT -s &lt;ip&gt; -j DROP</code> (Linux) / <code>netsh advfirewall firewall add rule</code> (Windows), logged to <code>shield_actions</code> with measured latency</td>
+</tr>
+<tr>
+<td>AS-02</td>
+<td>Process kill: <code>psutil.Process(pid).kill()</code> / <code>os.kill(pid, SIGKILL)</code> on canary-triggering or flagged-malicious PIDs</td>
+</tr>
+<tr>
+<td>AS-03</td>
+<td>Host quarantine mode: apply a deny-all-except-management-channel firewall ruleset to the local host</td>
+</tr>
+<tr>
+<td>AS-04</td>
+<td>Response mode toggle in config: <code>AUTONOMOUS</code> (Shields act immediately on Ultron's recommendation) vs <code>HUMAN_APPROVAL</code> (action queued, dashboard shows a &quot;Deploy Shield&quot; button)</td>
+</tr>
+<tr>
+<td>AS-05</td>
+<td>Every action timestamps entry (detection) and exit (containment complete) to compute and display latency in ms</td>
+</tr>
+</tbody>
+</table>
+<h3>Module 4 — Cyber Range &amp; Command Center UI</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI-01</td>
+<td>CustomTkinter dark/brass-or-neon cyberpunk shell: network topology panel, live terminal-style event feed, MITRE heatmap grid, camera/voice trigger indicators</td>
+</tr>
+<tr>
+<td>UI-02</td>
+<td>Range simulator buttons, each spawning a loopback-only (<code>127.0.0.1</code>) scripted attack: SSH brute-force loop, stealth SYN scan, canary encryption burst</td>
+</tr>
+<tr>
+<td>UI-03</td>
+<td>Live &quot;Defense Latency&quot; readout per simulated attack (e.g., &quot;Neutralized in 140ms&quot;)</td>
+</tr>
+<tr>
+<td>UI-04</td>
+<td>Incident detail view: chronological timeline + (stubbed hook for) evidence relationship graph</td>
+</tr>
+<tr>
+<td>UI-05</td>
+<td>Natural-language case query box that forwards free-text questions to the Antigravity agent against the SQLite incident store (e.g., &quot;show failed auths from subnet X in last 2 hours&quot;)</td>
+</tr>
+</tbody>
+</table>
+<h2>7. Non-Functional Requirements</h2>
+<ul>
+<li><strong>Offline-first:</strong> detection and containment must never depend on network access to function; only Ultron's reasoning call and optional threat-intel lookups (AbuseIPDB/VirusTotal, stubbed for v2) go outbound.</li>
+<li><strong>Latency budget:</strong> end-to-end detection→containment must be demonstrably under 500ms for the simulated scenarios.</li>
+<li><strong>Safety:</strong> all offensive simulation code is hard-locked to loopback/isolated range; no code path can target external IPs.</li>
+<li><strong>Auditability:</strong> <code>incidents</code> and <code>shield_actions</code> tables are append-only from the app's perspective — no update/delete on historical rows.</li>
+<li><strong>Portability:</strong> cross-platform shield commands branch on <code>platform.system()</code>.</li>
+</ul>
+<h2>8. Database Schema (SQLite)</h2>
+<pre><code class="language-sql">CREATE TABLE network_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL,
+    mac_address TEXT NOT NULL,
+    vendor TEXT,
+    is_authorized BOOLEAN DEFAULT 0,
+    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE telemetry_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_module TEXT NOT NULL,      -- &#39;arp&#39; | &#39;canary&#39; | &#39;honeypot&#39; | &#39;auth_log&#39;
+    suspicious_ip TEXT,
+    raw_payload TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE incidents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    risk_score INTEGER NOT NULL,
+    mitre_tactic TEXT,
+    mitre_id TEXT,
+    summary TEXT,
+    status TEXT DEFAULT &#39;OPEN&#39;,       -- OPEN | CONTAINED | RESOLVED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE shield_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_id INTEGER REFERENCES incidents(id),
+    shield_type TEXT NOT NULL,        -- &#39;firewall&#39; | &#39;process_kill&#39; | &#39;quarantine&#39;
+    target_identifier TEXT NOT NULL,  -- ip or pid
+    latency_ms INTEGER,
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+</code></pre>
+<h2>9. Tech Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI reasoning / agent loop</td>
+<td><code>google-antigravity</code> (Agent, LocalAgentConfig, hooks.policy)</td>
+</tr>
+<tr>
+<td>Network sensing</td>
+<td><code>scapy</code></td>
+</tr>
+<tr>
+<td>File integrity monitoring</td>
+<td><code>watchdog</code></td>
+</tr>
+<tr>
+<td>Process / system control</td>
+<td><code>psutil</code>, <code>subprocess</code>, <code>os</code></td>
+</tr>
+<tr>
+<td>Voice</td>
+<td><code>pyttsx3</code></td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>sqlite3</code> (stdlib)</td>
+</tr>
+<tr>
+<td>UI</td>
+<td><code>customtkinter</code></td>
+</tr>
+<tr>
+<td>Concurrency</td>
+<td><code>threading</code> + thread-safe <code>queue.Queue</code></td>
+</tr>
+</tbody>
+</table>
+<h2>10. Risks &amp; Mitigations</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Firewall commands need elevated privileges</td>
+<td>Document <code>sudo</code>/admin run requirement; fail gracefully with a dashboard warning if not elevated</td>
+</tr>
+<tr>
+<td>Antigravity API call latency could blow the 500ms budget if in the critical path</td>
+<td>Keep classification async/non-blocking for the <em>detection</em> event; the 500ms metric measures Shield action latency specifically, not the AI call</td>
+</tr>
+<tr>
+<td>Judges' machine differs from dev machine (Windows vs Linux)</td>
+<td>Abstract all OS-specific shield commands behind a single interface, test both branches</td>
+</tr>
+<tr>
+<td>Canary/PID resolution race condition</td>
+<td>Poll <code>psutil</code> open file handles immediately on the <code>watchdog</code> callback, before the triggering process can exit</td>
+</tr>
+</tbody>
+</table>
+<h2>11. Hackathon Milestones</h2>
+<ol>
+<li><strong>Hour 0–2:</strong> DB schema + folder scaffold + God Eye sensors running standalone, writing to SQLite</li>
+<li><strong>Hour 2–5:</strong> Ultron Core wired to <code>google-antigravity</code>, consuming the event queue, producing scored incidents</li>
+<li><strong>Hour 5–8:</strong> Shields module wired to incidents, latency measured and logged</li>
+<li><strong>Hour 8–11:</strong> Dashboard UI + Range simulator wired end-to-end</li>
+<li><strong>Hour 11–12:</strong> Dry-run full demo loop, polish voice alerts and MITRE heatmap</li>
+</ol>
+<hr>
+<h1>Folder Structure</h1>
+<pre><code>ultron-god-eye/
+├── main.py                        # entrypoint: boots all modules, launches UI
+├── config.py                      # response mode (AUTONOMOUS/HUMAN_APPROVAL), thresholds, ports
+├── requirements.txt
+│
+├── god_eye/                       # MODULE 1 — Sensory &amp; Ingestion
+│   ├── __init__.py
+│   ├── arp_radar.py                # scapy subnet scanning
+│   ├── canary_watch.py             # watchdog canary file monitor + PID resolution
+│   └── honeypot.py                 # deception socket listener
+│
+├── ultron_core/                   # MODULE 2 — Cognition (Antigravity agent)
+│   ├── __init__.py
+│   ├── agent.py                    # google-antigravity Agent config + system instructions
+│   ├── risk_scoring.py             # 0-100 scoring heuristics
+│   ├── mitre_map.py                # attack pattern -&gt; MITRE ATT&amp;CK ID table
+│   ├── correlator.py               # multi-event -&gt; single incident correlation
+│   └── voice.py                    # pyttsx3 alert thread
+│
+├── shields/                        # MODULE 3 — Active Defense
+│   ├── __init__.py
+│   ├── firewall_shield.py          # iptables / netsh IP block
+│   ├── process_shield.py           # psutil / os.kill PID termination
+│   └── quarantine.py               # host isolation ruleset
+│
+├── range_simulator/                # MODULE 5 — Cyber Range
+│   ├── __init__.py
+│   ├── sim_bruteforce.py           # loopback SSH brute-force emulation
+│   ├── sim_synscan.py              # loopback stealth SYN scan emulation
+│   └── sim_canary_burst.py         # rapid canary-file encryption emulation
+│
+├── dashboard/                      # MODULE 4 — Command Center UI
+│   ├── __init__.py
+│   ├── app.py                      # CustomTkinter root window
+│   ├── panels/
+│   │   ├── topology_panel.py
+│   │   ├── terminal_feed.py
+│   │   ├── mitre_heatmap.py
+│   │   └── incident_detail.py
+│   └── theme.py                    # dark/cyberpunk color + font tokens
+│
+├── storage/
+│   ├── __init__.py
+│   ├── db.py                       # sqlite3 connection + schema init
+│   └── models.py                   # typed row accessors for the 4 tables
+│
+└── core/
+    ├── __init__.py
+    ├── event_bus.py                 # shared thread-safe queue.Queue between God Eye -&gt; Ultron
+    └── logger.py
+</code></pre>
+<p><strong>Design intent:</strong> <code>god_eye/</code> only ever <em>writes</em> telemetry and never calls <code>shields/</code> directly — every containment decision routes through <code>ultron_core/</code>, keeping the &quot;AI recommends, Shield executes&quot; trust boundary the Human-in-the-Loop toggle (AS-04) depends on.</p>
+
+</body></html>

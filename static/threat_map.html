@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT ULTRON - Threat Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ECharts for the 2D Map -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #030811;
+            --panel-bg: rgba(5, 15, 30, 0.7);
+            --cyan: #00e5ff;
+            --cyan-dim: rgba(0, 229, 255, 0.15);
+            --red: #ff2a55;
+            --red-dim: rgba(255, 42, 85, 0.15);
+            --green: #00ffaa;
+            --text-main: #d0e5ff;
+            --text-dim: #7090b0;
+            --border-color: #122840;
+            --font-ui: 'Rajdhani', sans-serif;
+            --font-data: 'Share Tech Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-image: 
+                linear-gradient(rgba(3, 8, 17, 0.9), rgba(3, 8, 17, 0.9)),
+                radial-gradient(circle at 50% 50%, #0a1930 0%, #030811 100%);
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(90deg, rgba(5,15,30,0.9), rgba(5,15,30,0.4));
+            height: 60px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: var(--cyan-dim);
+            border: 1px solid var(--cyan);
+            border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--cyan); font-size: 20px;
+            box-shadow: 0 0 10px var(--cyan-dim);
+        }
+        .brand-text h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+        .brand-text span { font-size: 10px; color: var(--cyan); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex; gap: 30px;
+        }
+        .nav-item {
+            color: var(--text-dim); font-size: 12px; font-weight: 600; text-transform: uppercase;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            padding: 5px 0; position: relative; text-decoration: none;
+        }
+        .nav-item.active { color: var(--text-main); }
+        .nav-item.active::after {
+            content: ''; position: absolute; bottom: -17px; left: 0; width: 100%; height: 2px; background: var(--red);
+            box-shadow: 0 -2px 10px var(--red);
+        }
+        .nav-item i { font-size: 14px; }
+        .nav-item.active i { color: var(--red); }
+
+        .header-right {
+            display: flex; align-items: center; gap: 20px;
+        }
+        .system-status {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid rgba(0, 255, 170, 0.3);
+            padding: 5px 12px; border-radius: 20px;
+        }
+        .status-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); }
+        .status-text { display: flex; flex-direction: column; }
+        .status-text strong { font-size: 10px; color: var(--green); text-transform: uppercase; }
+        .status-text span { font-size: 9px; color: var(--text-dim); }
+        
+        .time-box {
+            font-family: var(--font-data); font-size: 12px; text-align: right;
+        }
+        .time-box div:first-child { color: var(--text-dim); font-size: 10px; }
+
+        /* MAIN DASHBOARD */
+        .dashboard {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 800px;
+            height: calc(100vh - 120px);
+        }
+
+        /* PANELS */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+        .panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+        }
+        .panel-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 10px;
+            font-size: 11px; font-weight: 700; color: var(--text-main); letter-spacing: 1px;
+            background: rgba(0,0,0,0.2);
+        }
+        .panel-header i { color: var(--red); font-size: 14px; }
+        .panel-body { padding: 15px; flex: 1; overflow-y: auto; }
+
+        /* LEFT COLUMN */
+        .col-left { display: flex; flex-direction: column; gap: 20px; }
+        
+        .origin-details { display: flex; flex-direction: column; gap: 15px; }
+        .attacker-card {
+            border: 1px solid var(--red-dim); background: rgba(255,42,85,0.05);
+            padding: 12px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .attacker-icon {
+            width: 40px; height: 40px; border: 1px dashed var(--red); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; color: var(--red); position: relative;
+        }
+        .attacker-icon::after {
+            content:''; position: absolute; width: 100%; height: 100%; border: 1px solid var(--red); border-radius: 50%; animation: ping 2s infinite;
+        }
+        @keyframes ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        .attacker-info { flex: 1; margin-left: 15px; }
+        .attacker-info span { font-size: 9px; color: var(--red); font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+        .attacker-info .country { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        
+        .data-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 10px; }
+        .data-label { color: var(--text-dim); }
+        .data-value { font-family: var(--font-data); color: var(--text-main); text-align: right; }
+        .data-value.highlight { color: var(--red); font-weight: 700; }
+
+        .intel-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .coords-box {
+            display: flex; align-items: center; gap: 20px;
+        }
+        .mini-globe {
+            width: 80px; height: 80px; border-radius: 50%; border: 1px solid var(--cyan-dim);
+            background: radial-gradient(circle at 30% 30%, rgba(0,229,255,0.2), transparent);
+            position: relative; overflow: hidden; box-shadow: 0 0 15px var(--cyan-dim) inset;
+        }
+        .mini-globe::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(0,229,255,0.1) 10px, rgba(0,229,255,0.1) 11px),
+                        repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(0,229,255,0.1) 10px, rgba(0,229,255,0.1) 11px);
+            border-radius: 50%;
+        }
+        .crosshair { position: absolute; top: 30%; left: 40%; width: 6px; height: 6px; background: var(--red); border-radius: 50%; box-shadow: 0 0 10px var(--red); }
+        .coord-details { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+        /* MIDDLE MAP */
+        .map-panel { border: 1px solid var(--cyan-dim); box-shadow: 0 0 30px rgba(0,229,255,0.05) inset; overflow: hidden; position: relative;}
+        #echart-map { width: 100%; height: 100%; }
+        
+        .ocean-label { position: absolute; font-family: var(--font-data); font-size: 10px; color: rgba(112, 144, 176, 0.4); text-align: center; letter-spacing: 3px; pointer-events: none; z-index: 5; }
+        
+        .compass-rose { position: absolute; bottom: 50px; left: 30px; width: 60px; height: 60px; pointer-events: none; opacity: 0.6; z-index: 5; }
+        .compass-rose div { position: absolute; font-size: 8px; color: var(--text-dim); }
+        .c-n { top: 0; left: 50%; transform: translateX(-50%); }
+        .c-s { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .c-e { top: 50%; right: 0; transform: translateY(-50%); }
+        .c-w { top: 50%; left: 0; transform: translateY(-50%); }
+        .c-circle { top: 15px; left: 15px; width: 30px; height: 30px; border: 1px dashed var(--text-dim); border-radius: 50%; }
+        .c-circle::after { content:''; position: absolute; top: 14px; left: -10px; width: 50px; height: 1px; background: rgba(112,144,176,0.3); }
+        .c-circle::before { content:''; position: absolute; left: 14px; top: -10px; height: 50px; width: 1px; background: rgba(112,144,176,0.3); }
+        
+        .map-top-bar {
+            position: absolute; top: 15px; left: 15px; right: 15px; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+        }
+        .map-title { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
+        .map-title .dot { width: 8px; height: 8px; background: var(--red); border-radius: 50%; box-shadow: 0 0 8px var(--red); }
+        .map-filters { display: flex; gap: 10px; pointer-events: auto; }
+        .map-filter { padding: 4px 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: var(--text-dim); font-size: 10px; cursor: pointer; border-radius: 2px; }
+        .map-filter.active { border-color: var(--red); color: var(--red); box-shadow: 0 0 10px var(--red-dim); }
+
+        .map-legend { position: absolute; bottom: 15px; left: 15px; z-index: 10; font-size: 10px; color: var(--text-dim); display: flex; gap: 15px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-item i.red { color: var(--red); }
+        .legend-item i.cyan { color: var(--cyan); }
+
+        .map-controls { position: absolute; bottom: 15px; right: 15px; z-index: 10; display: flex; gap: 8px; }
+        .map-btn { width: 28px; height: 28px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: var(--text-dim); display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 4px; }
+        .map-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+        /* RIGHT COLUMN */
+        .col-right { display: flex; flex-direction: column; gap: 20px; }
+        
+        .feed-list { display: flex; flex-direction: column; gap: 12px; }
+        .feed-item { display: flex; gap: 10px; align-items: flex-start; position: relative; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .feed-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .feed-time { font-family: var(--font-data); font-size: 10px; color: var(--text-dim); min-width: 35px; margin-top: 2px; }
+        .feed-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; margin-top: 5px; box-shadow: 0 0 5px var(--red); }
+        .feed-content h4 { font-size: 11px; color: var(--text-main); font-weight: 600; margin-bottom: 3px; }
+        .feed-content p { font-size: 10px; color: var(--text-dim); font-family: var(--font-data); }
+
+        .metrics-body { display: flex; align-items: center; gap: 20px; }
+        .risk-gauge {
+            width: 80px; height: 80px; border-radius: 50%;
+            border: 4px solid var(--red-dim);
+            border-top-color: var(--red); border-right-color: var(--red);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 0 15px var(--red-dim);
+            transform: rotate(-45deg);
+        }
+        .risk-gauge .val { transform: rotate(45deg); font-family: var(--font-data); font-size: 24px; font-weight: 700; color: var(--red); line-height: 1; }
+        .risk-gauge .label { transform: rotate(45deg); font-size: 8px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+        
+        .metrics-bars { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .bar-item { display: flex; flex-direction: column; gap: 4px; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+        .bar-label span:last-child { color: var(--red); font-family: var(--font-data); font-weight: 700; }
+        .bar-track { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--red); box-shadow: 0 0 5px var(--red); }
+
+        .defense-list { display: flex; flex-direction: column; gap: 12px; }
+        .defense-item { display: flex; gap: 10px; align-items: flex-start; }
+        .defense-icon { width: 16px; height: 16px; background: rgba(0,255,170,0.1); border: 1px solid var(--green); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--green); font-size: 8px; margin-top: 2px; }
+        .defense-content h4 { font-size: 11px; color: var(--text-main); font-weight: 600; margin-bottom: 2px; }
+        .defense-content p { font-size: 10px; color: var(--text-dim); font-family: var(--font-data); }
+
+        /* FOOTER */
+        footer {
+            height: 60px;
+            border-top: 1px solid var(--border-color);
+            background: linear-gradient(90deg, rgba(5,15,30,0.8), rgba(5,15,30,0.4));
+            display: flex; align-items: center; padding: 0 20px; gap: 30px;
+        }
+        .footer-brand { flex: 1; }
+        .footer-brand h2 { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--text-main); }
+        .footer-brand span { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+
+        .stat-block { display: flex; align-items: center; gap: 10px; padding: 0 20px; border-left: 1px solid var(--border-color); }
+        .stat-icon { color: var(--red); font-size: 14px; }
+        .stat-icon.green { color: var(--green); }
+        .stat-icon.cyan { color: var(--cyan); }
+        .stat-info { display: flex; flex-direction: column; }
+        .stat-info span { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+        .stat-info strong { font-size: 18px; font-family: var(--font-data); color: #fff; display: flex; align-items: baseline; gap: 5px; }
+        .stat-info strong small { font-size: 10px; color: var(--red); }
+        .stat-info strong small.green { color: var(--green); }
+
+        .wave-graph { flex: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; }
+        .wave-line { width: 100px; height: 30px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline points="0,10 20,10 25,5 30,15 35,10 100,10" fill="none" stroke="%2300e5ff" stroke-width="1.5"/></svg>') no-repeat center; opacity: 0.5; }
+        
+        .grid-status { display: flex; align-items: center; gap: 10px; padding-left: 20px; border-left: 1px solid var(--border-color); }
+        .grid-icon { width: 30px; height: 30px; border: 1px solid var(--text-dim); border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+        
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="brand">
+            <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="brand-text">
+                <h1>Project Ultron</h1>
+                <span>Global Cyber Defense Platform</span>
+            </div>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html" class="nav-item"><i class="fa-solid fa-border-all"></i> OVERVIEW</a>
+            <a href="threat_map.html" class="nav-item active"><i class="fa-solid fa-map-location-dot"></i> THREAT MAP</a>
+            <a href="sensors.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i> SENSORS</a>
+            <a href="reasoning.html" class="nav-item"><i class="fa-solid fa-brain"></i> REASONING</a>
+            <a href="response.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> RESPONSE</a>
+            <a href="ultron.html" class="nav-item"><i class="fa-solid fa-microphone-lines"></i> AI CORE</a>
+        </div>
+        <div class="header-right">
+            <div class="system-status">
+                <div class="status-dot"></div>
+                <div class="status-text">
+                    <strong>System Online</strong>
+                    <span>All Systems Operational</span>
+                </div>
+            </div>
+            <div class="time-box">
+                <div>Apr 26, 2025</div>
+                <div style="color:var(--cyan);">14:37:28 UTC</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD -->
+    <main class="dashboard">
+        
+        <!-- LEFT COLUMN -->
+        <div class="col-left">
+            <div class="panel" style="flex:1;">
+                <div class="panel-header"><i class="fa-solid fa-crosshairs"></i> THREAT ORIGIN DETAILS</div>
+                <div class="panel-body origin-details">
+                    <div class="attacker-card">
+                        <div class="attacker-icon"><i class="fa-solid fa-crosshairs"></i></div>
+                        <div class="attacker-info">
+                            <span>ATTACKER NODE</span>
+                            <div class="country">🇩🇪 Germany (DE)</div>
+                        </div>
+                        <div style="font-size:10px; color:var(--red); border:1px solid var(--red); padding:3px 6px; border-radius:2px;">HIGH RISK</div>
+                    </div>
+                    <div>
+                        <div class="data-row"><span class="data-label">IP Address</span><span class="data-value">185.220.101.5</span></div>
+                        <div class="data-row"><span class="data-label">Latitude / Longitude</span><span class="data-value">52.5200° N, 13.4050° E</span></div>
+                        <div class="data-row"><span class="data-label">MITRE ATT&CK</span><span class="data-value highlight">T1110 - Brute Force</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:1.2;">
+                <div class="panel-header"><i class="fa-solid fa-circle-nodes"></i> THREAT INTELLIGENCE</div>
+                <div class="panel-body intel-list">
+                    <div class="data-row"><span class="data-label">ASN</span><span class="data-value">AS3320 (Deutsche Telekom AG)</span></div>
+                    <div class="data-row"><span class="data-label">ISP</span><span class="data-value">Deutsche Telekom AG</span></div>
+                    <div class="data-row"><span class="data-label">Organization</span><span class="data-value">Deutsche Telekom AG</span></div>
+                    <div class="data-row"><span class="data-label">Last Seen</span><span class="data-value" style="color:var(--cyan)">Apr 26, 2025 14:21:33 UTC</span></div>
+                    <div class="data-row"><span class="data-label">Attack Vector</span><span class="data-value">Brute Force / SSH</span></div>
+                    <div class="data-row"><span class="data-label">Confidence</span><span class="data-value highlight" style="font-size:16px;">92%</span></div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:0.8;">
+                <div class="panel-header"><i class="fa-solid fa-location-crosshairs"></i> COORDINATES</div>
+                <div class="panel-body coords-box">
+                    <div class="mini-globe">
+                        <div class="crosshair"></div>
+                    </div>
+                    <div class="coord-details">
+                        <div>
+                            <div class="data-label" style="font-size:9px;">LAT</div>
+                            <div class="data-value" style="text-align:left; font-size:14px;">52.5200° N</div>
+                        </div>
+                        <div>
+                            <div class="data-label" style="font-size:9px;">LONG</div>
+                            <div class="data-value" style="text-align:left; font-size:14px;">13.4050° E</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE COLUMN (MAP) -->
+        <div class="panel map-panel">
+            <div class="map-top-bar">
+                <div class="map-title"><div class="dot"></div> SATELLITE THREAT MAP</div>
+                <div class="map-filters">
+                    <div class="map-filter active"><i class="fa-solid fa-circle" style="font-size:6px; margin-right:4px;"></i> LIVE</div>
+                    <div class="map-filter"><i class="fa-regular fa-clock" style="margin-right:4px;"></i> REAL-TIME</div>
+                    <div class="map-filter"><i class="fa-solid fa-satellite" style="margin-right:4px;"></i> SATELLITE</div>
+                </div>
+            </div>
+            
+            <div id="echart-map"></div>
+            
+            <div class="ocean-label" style="top: 12%; left: 40%;">ARCTIC OCEAN</div>
+            <div class="ocean-label" style="top: 45%; left: 25%;">ATLANTIC<br>OCEAN</div>
+            <div class="ocean-label" style="top: 65%; left: 65%;">INDIAN<br>OCEAN</div>
+            <div class="ocean-label" style="bottom: 12%; left: 45%;">SOUTHERN OCEAN</div>
+            
+            <div class="compass-rose">
+                <div class="c-n">N</div><div class="c-e">E</div><div class="c-s">S</div><div class="c-w">W</div>
+                <div class="c-circle"></div>
+            </div>
+
+            <div class="map-legend">
+                <div class="legend-item"><i class="fa-solid fa-circle red" style="font-size:8px;"></i> Attacker Node</div>
+                <div class="legend-item"><i class="fa-regular fa-circle red"></i> Attack Trajectory</div>
+                <div class="legend-item"><i class="fa-solid fa-shield-halved cyan"></i> Protected Host</div>
+                <div class="legend-item"><i class="fa-solid fa-circle" style="color:var(--text-dim); font-size:8px;"></i> Other Active Threats</div>
+            </div>
+            
+            <div class="map-controls">
+                <div class="map-btn"><i class="fa-solid fa-plus"></i></div>
+                <div class="map-btn"><i class="fa-solid fa-minus"></i></div>
+                <div class="map-btn"><i class="fa-solid fa-crosshairs"></i></div>
+                <div class="map-btn"><i class="fa-solid fa-layer-group"></i></div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-right">
+            <div class="panel" style="flex:1.2;">
+                <div class="panel-header" style="justify-content:space-between;">
+                    <div><i class="fa-solid fa-circle-exclamation"></i> LIVE THREAT FEED</div>
+                    <div style="color:var(--cyan); cursor:pointer;">View All <i class="fa-solid fa-arrow-right" style="font-size:10px; color:var(--cyan);"></i></div>
+                </div>
+                <div class="panel-body feed-list">
+                    <div class="feed-item">
+                        <div class="feed-time">14:21</div>
+                        <div class="feed-dot"></div>
+                        <div class="feed-content">
+                            <h4>Brute Force Attempt Detected</h4>
+                            <p>IP: 185.220.101.5 (Germany)</p>
+                        </div>
+                    </div>
+                    <div class="feed-item">
+                        <div class="feed-time">14:18</div>
+                        <div class="feed-dot"></div>
+                        <div class="feed-content">
+                            <h4>Suspicious Login Attempt</h4>
+                            <p>IP: 185.220.101.5 (Germany)</p>
+                        </div>
+                    </div>
+                    <div class="feed-item">
+                        <div class="feed-time">14:12</div>
+                        <div class="feed-dot"></div>
+                        <div class="feed-content">
+                            <h4>C2 Beaconing Detected</h4>
+                            <p>IP: 103.45.67.89 (Netherlands)</p>
+                        </div>
+                    </div>
+                    <div class="feed-item">
+                        <div class="feed-time">14:07</div>
+                        <div class="feed-dot"></div>
+                        <div class="feed-content">
+                            <h4>Malicious Payload Signature</h4>
+                            <p>Hash: a3f5e7...9c2b (Unknown)</p>
+                        </div>
+                    </div>
+                    <div class="feed-item">
+                        <div class="feed-time">13:56</div>
+                        <div class="feed-dot"></div>
+                        <div class="feed-content">
+                            <h4>DDoS Activity Detected</h4>
+                            <p>IP: 45.76.32.18 (USA)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:1;">
+                <div class="panel-header"><i class="fa-solid fa-chart-pie"></i> THREAT METRICS</div>
+                <div class="panel-body metrics-body">
+                    <div class="risk-gauge">
+                        <div class="val">92</div>
+                        <div class="label">Risk Score</div>
+                    </div>
+                    <div class="metrics-bars">
+                        <div class="bar-item">
+                            <div class="bar-label"><span>Malicious Activity</span><span>92%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 92%;"></div></div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-label"><span>Anomaly Detection</span><span>87%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 87%;"></div></div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-label"><span>IP Reputation</span><span>76%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 76%;"></div></div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-label"><span>Behavioral Analysis</span><span>68%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 68%;"></div></div>
+                        </div>
+                        <div class="data-row" style="margin-top:5px; margin-bottom:0;"><span class="data-label" style="font-size:10px;">Overall Threat Level</span><span class="data-value highlight">HIGH</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:1;">
+                <div class="panel-header"><i class="fa-solid fa-shield-virus"></i> DEFENSE ACTIONS</div>
+                <div class="panel-body defense-list">
+                    <div class="defense-item">
+                        <div class="defense-icon"><i class="fa-solid fa-check"></i></div>
+                        <div class="defense-content">
+                            <h4 style="color:var(--cyan)">Firewall Rule Applied</h4>
+                            <p>14:23 Blocked IP: 185.220.101.5</p>
+                        </div>
+                    </div>
+                    <div class="defense-item">
+                        <div class="defense-icon"><i class="fa-solid fa-check"></i></div>
+                        <div class="defense-content">
+                            <h4 style="color:var(--cyan)">IPS Signature Matched</h4>
+                            <p>14:24 MITRE T1110 - Brute Force</p>
+                        </div>
+                    </div>
+                    <div class="defense-item">
+                        <div class="defense-icon"><i class="fa-solid fa-check"></i></div>
+                        <div class="defense-content">
+                            <h4 style="color:var(--cyan)">Connection Terminated</h4>
+                            <p>14:24 Dropped session (TCP/22)</p>
+                        </div>
+                    </div>
+                    <div class="defense-item">
+                        <div class="defense-icon"><i class="fa-solid fa-check"></i></div>
+                        <div class="defense-content">
+                            <h4 style="color:var(--cyan)">Monitoring Increased</h4>
+                            <p>14:25 Deep packet inspection active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-brand">
+            <h2>PROJECT ULTRON</h2>
+            <span>DETECT / ANALYZE / CONTAIN / PREVENT</span>
+        </div>
+        
+        <div class="stat-block">
+            <div class="stat-icon"><i class="fa-solid fa-shield-cat"></i></div>
+            <div class="stat-info">
+                <span>TOTAL THREATS</span>
+                <strong>247 <small>+12%</small></strong>
+            </div>
+        </div>
+        
+        <div class="stat-block">
+            <div class="stat-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="stat-info">
+                <span>BLOCKED</span>
+                <strong>236 <small class="green">+8%</small></strong>
+            </div>
+        </div>
+
+        <div class="stat-block">
+            <div class="stat-icon cyan"><i class="fa-solid fa-microscope"></i></div>
+            <div class="stat-info">
+                <span>UNDER ANALYSIS</span>
+                <strong>11 <small class="cyan">-3%</small></strong>
+            </div>
+        </div>
+
+        <div class="stat-block">
+            <div class="stat-icon"><i class="fa-solid fa-house-chimney-crack"></i></div>
+            <div class="stat-info">
+                <span>CRITICAL</span>
+                <strong>3 <small>+1%</small></strong>
+            </div>
+        </div>
+
+        <div class="wave-graph">
+            <div class="wave-line"></div>
+        </div>
+
+        <div class="grid-status">
+            <div class="grid-icon"><i class="fa-solid fa-shield"></i></div>
+            <div class="status-text">
+                <strong style="color:var(--text-main); font-size:10px;">GLOBAL DEFENSE GRID</strong>
+                <span>Active Protection • 24/7</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ECharts Map Script -->
+    <script>
+        // Init ECharts
+        var chartDom = document.getElementById('echart-map');
+        var myChart = echarts.init(chartDom);
+        
+        // India (Host)
+        const hostCoord = [75.7873, 26.9124];
+        
+        // Attackers
+        const attackers = [
+            { name: 'Germany', coord: [13.4050, 52.5200], value: 100 },
+            { name: 'USA', coord: [-95.7129, 37.0902], value: 60 },
+            { name: 'Russia', coord: [105.3188, 61.5240], value: 40 },
+            { name: 'Brazil', coord: [-51.9253, -14.2350], value: 30 },
+            { name: 'China', coord: [116.4074, 39.9042], value: 50 },
+            { name: 'South Africa', coord: [22.9375, -30.5595], value: 20 }
+        ];
+
+        // Create Lines Data (Attacker -> Host)
+        const linesData = attackers.map(a => {
+            return {
+                coords: [a.coord, hostCoord],
+                lineStyle: {
+                    color: a.name === 'Germany' ? '#ff2a55' : 'rgba(255, 42, 85, 0.4)',
+                    width: a.name === 'Germany' ? 2 : 1,
+                    curveness: 0.3
+                }
+            };
+        });
+
+        // Scatter points
+        const scatterData = attackers.map(a => {
+            return { name: a.name, value: a.coord.concat([a.value]) };
+        });
+
+        const option = {
+            backgroundColor: 'transparent',
+            geo: {
+                map: 'world',
+                roam: true,
+                zoom: 1.2,
+                center: [40, 20],
+                label: { emphasize: { show: false } },
+                itemStyle: {
+                    normal: {
+                        areaColor: '#0a1930',
+                        borderColor: '#122840',
+                        borderWidth: 1
+                    },
+                    emphasis: {
+                        areaColor: '#0f2950'
+                    }
+                }
+            },
+            series: [
+                // Arcs/Lines
+                {
+                    type: 'lines',
+                    zlevel: 1,
+                    effect: {
+                        show: true,
+                        period: 4,
+                        trailLength: 0.5,
+                        color: '#ff2a55',
+                        symbolSize: 4
+                    },
+                    lineStyle: {
+                        normal: { color: '#ff2a55', width: 1, opacity: 0.4, curveness: 0.3 }
+                    },
+                    data: linesData
+                },
+                // Attacker Dots
+                {
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    zlevel: 2,
+                    rippleEffect: { brushType: 'stroke', scale: 4 },
+                    label: {
+                        normal: { show: false }
+                    },
+                    symbolSize: function (val) {
+                        return val[2] / 10 + 2;
+                    },
+                    itemStyle: {
+                        normal: { color: '#ff2a55', shadowBlur: 10, shadowColor: '#ff2a55' }
+                    },
+                    data: scatterData
+                },
+                // Host Dot (India)
+                {
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    zlevel: 3,
+                    rippleEffect: { brushType: 'stroke', scale: 5 },
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            formatter: 'PROTECTED HOST\nRajasthan, India\n26.9124° N, 75.7873° E',
+                            align: 'left',
+                            color: '#00e5ff',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0,229,255,0.1)',
+                            padding: [6, 10],
+                            borderRadius: 4,
+                            borderColor: '#00e5ff',
+                            borderWidth: 1,
+                            lineHeight: 16
+                        }
+                    },
+                    symbolSize: 15,
+                    symbol: 'path://M512 804.8l273.4-166c18.3-11.1 29.5-30.8 29.5-52.2V279.1c0-21.4-11.2-41-29.5-52.2L512 61 238.6 226.9c-18.3 11.1-29.5 30.8-29.5 52.2v307.4c0 21.4 11.2 41 29.5 52.2L512 804.8z', // Shield shape
+                    itemStyle: {
+                        normal: { color: '#00e5ff', shadowBlur: 15, shadowColor: '#00e5ff' }
+                    },
+                    data: [{ name: 'Host', value: [75.7873, 26.9124] }]
+                },
+                // Highlight Germany specifically
+                {
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    zlevel: 3,
+                    rippleEffect: { brushType: 'stroke', scale: 6 },
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'top',
+                            formatter: 'ATTACKER NODE\nIP: 185.220.101.5\nLAT: 52.5200° N\nLONG: 13.4050° E\nMITRE: T1110',
+                            align: 'left',
+                            color: '#ff2a55',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(255,42,85,0.1)',
+                            padding: [6, 10],
+                            borderRadius: 4,
+                            borderColor: '#ff2a55',
+                            borderWidth: 1,
+                            lineHeight: 16
+                        }
+                    },
+                    symbolSize: 12,
+                    itemStyle: {
+                        normal: { color: '#ff2a55', shadowBlur: 20, shadowColor: '#ff2a55' }
+                    },
+                    data: [{ name: 'Germany', value: [13.4050, 52.5200] }]
+                }
+            ]
+        };
+        myChart.setOption(option);
+        
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+
+        // --- INTERACTIVE FEATURES ---
+        
+        // 1. Map Zoom & Controls
+        let currentZoom = 1.2;
+        const mapBtns = document.querySelectorAll('.map-btn');
+        if(mapBtns.length >= 3) {
+            mapBtns[0].addEventListener('click', () => { // Plus
+                currentZoom += 0.3;
+                myChart.setOption({ geo: { zoom: currentZoom } });
+            });
+            mapBtns[1].addEventListener('click', () => { // Minus
+                currentZoom = Math.max(0.5, currentZoom - 0.3);
+                myChart.setOption({ geo: { zoom: currentZoom } });
+            });
+            mapBtns[2].addEventListener('click', () => { // Recenter
+                currentZoom = 1.2;
+                myChart.setOption({ geo: { center: [40, 20], zoom: currentZoom } });
+            });
+        }
+
+        // 2. Map Filters Toggle
+        const filters = document.querySelectorAll('.map-filter');
+        filters.forEach(f => {
+            f.addEventListener('click', function() {
+                filters.forEach(fl => fl.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 3. Live Threat Simulation Engine
+        const fakeThreats = [
+            { name: "France", coord: [2.2137, 46.2276], ip: "192.168.1.1", attack: "SQL Injection" },
+            { name: "Japan", coord: [138.2529, 36.2048], ip: "203.0.113.5", attack: "DDoS Activity" },
+            { name: "Australia", coord: [133.7751, -25.2744], ip: "198.51.100.12", attack: "Zero-Day Exploit" },
+            { name: "Canada", coord: [-106.3468, 56.1304], ip: "10.0.0.55", attack: "Malware Payload" },
+            { name: "UK", coord: [-3.4359, 55.3780], ip: "45.22.11.9", attack: "Ransomware Beacon" },
+            { name: "Egypt", coord: [30.8024, 26.8205], ip: "41.33.22.1", attack: "Brute Force / RDP" }
+        ];
+        
+        let threatCounter = 247;
+        const totalThreatsElement = document.querySelector('.stat-block:nth-child(2) strong');
+        const feedList = document.querySelector('.feed-list');
+        
+        setInterval(() => {
+            // Pick a random threat
+            const t = fakeThreats[Math.floor(Math.random() * fakeThreats.length)];
+            
+            // Add to chart arrays
+            attackers.push({ name: t.name, coord: t.coord, value: Math.floor(Math.random() * 50) + 20 });
+            
+            linesData.push({
+                coords: [t.coord, hostCoord],
+                lineStyle: { color: 'rgba(255, 42, 85, 0.4)', width: 1, curveness: 0.3 }
+            });
+            
+            scatterData.push({ name: t.name, value: t.coord.concat([30]) });
+            
+            // Update ECharts
+            myChart.setOption({
+                series: [
+                    { data: linesData },
+                    { data: scatterData }
+                ]
+            });
+            
+            // Update Top Total Threats Counter
+            threatCounter++;
+            if(totalThreatsElement) {
+                totalThreatsElement.innerHTML = `${threatCounter} <small>+12.1%</small>`;
+            }
+            
+            // Update Live Feed List
+            if(feedList) {
+                const now = new Date();
+                const timeStr = now.getUTCHours().toString().padStart(2, '0') + ':' + now.getUTCMinutes().toString().padStart(2, '0');
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'feed-item';
+                // Slide down animation slightly
+                newItem.style.animation = "fadein 0.5s ease-in-out";
+                newItem.innerHTML = `
+                    <div class="feed-time">${timeStr}</div>
+                    <div class="feed-dot"></div>
+                    <div class="feed-content">
+                        <h4>${t.attack}</h4>
+                        <p>IP: ${t.ip} (${t.name})</p>
+                    </div>
+                `;
+                
+                feedList.prepend(newItem);
+                if(feedList.children.length > 5) {
+                    feedList.removeChild(feedList.lastChild);
+                }
+            }
+        }, 3500); // Spawn new threat every 3.5 seconds
+    </script>
+</body>
+</html>

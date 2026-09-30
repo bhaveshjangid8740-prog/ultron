@@ -1,0 +1,244 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Technical Requirement Document</h1>
+<h2>Project Ultron &amp; God's Eye — Autonomous SOC Agent</h2>
+<p><strong>Version:</strong> 1.0 | <strong>Audience:</strong> Engineering team | <strong>Companion doc:</strong> PRD v1.0</p>
+<hr>
+<h2>1. System Boundaries</h2>
+<table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Inside</th>
+<th>Outside</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trust boundary</td>
+<td>Sensors, Ultron Brain, Shields, SQLite — all run in-process, same host</td>
+<td>Antigravity/Gemini API call (reasoning only, no execution rights)</td>
+</tr>
+<tr>
+<td>Execution authority</td>
+<td>Only <code>shields/</code> may invoke <code>subprocess</code>, <code>psutil.kill</code>, or firewall commands</td>
+<td><code>core/</code> (the agent) may only <em>recommend</em>; it never gets raw OS access</td>
+</tr>
+<tr>
+<td>Network exposure</td>
+<td>Honeypot listener (intentionally exposed), ARP scanner (read-only)</td>
+<td>No inbound ports besides the honeypot; UI/DB never network-exposed</td>
+</tr>
+<tr>
+<td>Data boundary</td>
+<td>All telemetry/incidents persist locally in SQLite</td>
+<td>No telemetry leaves the host except the JSON payload sent to the Antigravity/Gemini reasoning call</td>
+</tr>
+</tbody>
+</table>
+<p>This is the core architectural rule the whole TRD hangs on: <strong>sensors observe, the agent decides, shields act, storage records — and no module skips a layer.</strong></p>
+<h2>2. Data Flow Pipeline</h2>
+<pre><code>[Scapy ARP thread]   ─┐
+[Watchdog canary thread]├─► event_bus.Queue (thread-safe) ─► [Ultron Brain loop] ─► decision
+[Honeypot socket thread]─┘                                         │
+                                                                    ├─► shields/* (if action_required)
+                                                                    └─► storage/db.py (always, every step)
+</code></pre>
+<p><strong>Step-by-step contract:</strong></p>
+<ol>
+<li><strong>Ingestion (async, non-blocking):</strong> each sensor runs on its own <code>threading.Thread(daemon=True)</code>. A sensor's <em>only</em> job is to normalize a raw signal into a single JSON schema and <code>queue.put()</code> it. Sensors never inspect each other's data and never call the agent directly.</li>
+<li><strong>Cognition:</strong> a single consumer thread (<code>ultron_core/brain.py</code>) runs <code>queue.get()</code> in a loop, batches/windows correlated events (same <code>suspicious_ip</code> within N seconds), and calls the <code>google-antigravity</code> <code>Agent</code> with the batched payload. The agent's system instructions constrain its output to a fixed JSON contract (Section 4). The agent is <strong>never given a tool that executes anything</strong> — its &quot;tool calling&quot; surface is limited to read-only lookups (MITRE table, historical incident count for scoring); actual response actions come back as a <em>recommendation field</em>, not a tool invocation.</li>
+<li><strong>Enforcement:</strong> the brain thread reads <code>recommended_action</code> from the agent's structured output. If <code>config.RESPONSE_MODE == AUTONOMOUS</code>, it calls the matching function in <code>shields/</code> directly. If <code>HUMAN_APPROVAL</code>, it writes a <code>PENDING</code> row and the UI exposes a &quot;Deploy Shield&quot; button that, on click, calls the same shield function. Either path measures <code>t_detected</code> → <code>t_contained</code> and logs <code>latency_ms</code>.</li>
+<li><strong>Storage:</strong> every transition (raw event, agent decision, shield execution) writes to SQLite synchronously on the calling thread, wrapped in a short-lived connection per write (SQLite + WAL mode to avoid lock contention across threads).</li>
+</ol>
+<h2>3. Threading &amp; Concurrency Model</h2>
+<ul>
+<li><strong>Model:</strong> classic producer/consumer. Sensors = producers (N threads). Brain = single consumer (1 thread) — deliberately single-threaded so incident correlation has no race conditions.</li>
+<li><strong>Queue:</strong> <code>queue.Queue()</code> (stdlib), bounded size (e.g. 1000) with <code>put(block=False)</code> + drop-oldest-on-full policy, so a flood (e.g., SYN scan burst) can't OOM the process — this is itself a signal (queue-full events are logged as a <code>DoS_SUSPECTED</code> telemetry row).</li>
+<li><strong>UI thread:</strong> CustomTkinter owns the main thread. All background threads communicate to the UI via a second lightweight queue (<code>ui_bus</code>) polled with <code>.after()</code> on a ~100ms tick — CustomTkinter is not thread-safe, so no background thread ever touches a widget directly.</li>
+<li><strong>SQLite concurrency:</strong> <code>PRAGMA journal_mode=WAL;</code> enabled at connection init so sensor threads, the brain thread, and the UI's read-only polling don't block each other.</li>
+<li><strong>Voice thread:</strong> <code>pyttsx3</code> gets its own dedicated worker thread with a small queue of strings, because the TTS engine's <code>.runAndWait()</code> is blocking and must never stall the brain loop.</li>
+</ul>
+<h2>4. Ultron Brain ↔ Antigravity Agent Contract</h2>
+<p><strong>Request (brain → agent):</strong> a batched JSON array of correlated <code>telemetry_events</code> rows plus lightweight context (asset criticality flag, repeat-offender count for that IP pulled from <code>incidents</code>).</p>
+<p><strong>Response (agent → brain):</strong> the agent's <code>system_instructions</code> pin it to return <em>only</em> this JSON shape (validated on receipt; malformed output = treated as a parse failure, logged, and defaults to a conservative <code>Medium</code> manual-review incident rather than silently dropped):</p>
+<pre><code class="language-json">{
+  &#34;risk_score&#34;: 0-100,
+  &#34;severity&#34;: &#34;LOW | MEDIUM | HIGH | CRITICAL&#34;,
+  &#34;mitre_id&#34;: &#34;T1110&#34;,
+  &#34;mitre_tactic&#34;: &#34;Credential Access&#34;,
+  &#34;summary&#34;: &#34;plain-English one-liner&#34;,
+  &#34;recommended_action&#34;: &#34;firewall_block | process_kill | quarantine | monitor_only&#34;,
+  &#34;target_identifier&#34;: &#34;ip or pid extracted from the batch&#34;
+}
+</code></pre>
+<p><strong>Policy layer:</strong> <code>google.antigravity.hooks.policy</code> is configured with <code>deny(&quot;*&quot;)</code> as the default plus explicit <code>allow()</code> on the two read-only lookup tools (MITRE table, incident history). This is enforced at the SDK level, not just by convention — even if the agent &quot;decides&quot; to call something else, the policy blocks it.</p>
+<h2>5. OS-Specific Command Handling (Shields)</h2>
+<p>All OS branching is isolated to a single interface so nothing above <code>shields/</code> needs to know the host OS:</p>
+<pre><code class="language-python"># shields/base.py — conceptual interface, not code yet
+class FirewallShield(Protocol):
+    def block_ip(self, ip: str) -&gt; ShieldResult: ...
+
+class ProcessShield(Protocol):
+    def kill_pid(self, pid: int) -&gt; ShieldResult: ...
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Linux</th>
+<th>Windows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Block IP</td>
+<td><code>iptables -A INPUT -s &lt;ip&gt; -j DROP</code> via <code>subprocess.run</code></td>
+<td><code>netsh advfirewall firewall add rule name=&quot;ultron_block_&lt;ip&gt;&quot; dir=in action=block remoteip=&lt;ip&gt;</code></td>
+</tr>
+<tr>
+<td>Kill process</td>
+<td><code>os.kill(pid, signal.SIGKILL)</code></td>
+<td><code>subprocess.run([&quot;taskkill&quot;, &quot;/PID&quot;, str(pid), &quot;/F&quot;])</code></td>
+</tr>
+<tr>
+<td>Quarantine host</td>
+<td><code>iptables -P INPUT DROP</code> + explicit allow for the management port</td>
+<td><code>netsh advfirewall set allprofiles firewallpolicy blockinbound,allowoutbound</code> + allow rule for management port</td>
+</tr>
+</tbody>
+</table>
+<p><code>platform.system()</code> is checked once at startup and a concrete <code>LinuxShield</code>/<code>WindowsShield</code> implementation is selected (strategy pattern) — no <code>if platform ==</code> branching scattered through the codebase.</p>
+<p><strong>Privilege handling:</strong> at startup, <code>shields/privilege_check.py</code> verifies elevated rights (root / Administrator). If missing, the app still boots (detection still works) but the dashboard shows a persistent &quot;SHIELDS DISABLED — run as admin&quot; banner rather than failing silently on the first real block attempt.</p>
+<h2>6. Non-Functional Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Latency</td>
+<td>Detection→containment &lt; 500ms for simulated scenarios; measured with <code>time.perf_counter()</code> at event ingestion and at shield-function return</td>
+</tr>
+<tr>
+<td>Resilience</td>
+<td>Malformed agent output, sensor crash, or DB write failure must not crash the process — each subsystem wraps its loop in try/except with a logger, and restarts its own thread</td>
+</tr>
+<tr>
+<td>Data integrity</td>
+<td><code>incidents</code> and <code>shield_actions</code> are insert-only from the application layer; no UPDATE/DELETE statements anywhere in the codebase touch historical rows (status transitions insert a new row referencing the old one, or use a status column with an audit trail, not overwrite)</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>Single <code>config.py</code> flag block for OS-independent paths (<code>pathlib</code>), no hardcoded <code>/</code> or <code>\</code></td>
+</tr>
+<tr>
+<td>Testability</td>
+<td>Every sensor and shield module exposes a pure-function core (parse/decide logic) separable from its I/O side effects, so unit tests don't require real network/OS access</td>
+</tr>
+</tbody>
+</table>
+<h2>7. Folder Structure (Production-Grade)</h2>
+<pre><code>ultron-god-eye/
+├── main.py                         # boots event_bus, starts sensor threads, starts brain thread, launches UI
+├── config.py                       # RESPONSE_MODE, ports, thresholds, poll intervals, DB path
+├── requirements.txt
+│
+├── sensors/                        # INGESTION — pure producers, never call core/ or shields/ directly
+│   ├── __init__.py
+│   ├── arp_scanner.py               # scapy subnet sweep -&gt; normalized JSON -&gt; event_bus
+│   ├── canary_monitor.py            # watchdog + psutil PID resolution -&gt; event_bus
+│   └── honeypot_listener.py         # socket bind, connection capture -&gt; event_bus
+│
+├── core/                           # COGNITION — the only module that talks to google-antigravity
+│   ├── __init__.py
+│   ├── brain.py                     # consumer loop: dequeue, correlate, call agent, dispatch decision
+│   ├── agent_client.py              # Agent/LocalAgentConfig setup, system_instructions, policy hooks
+│   ├── correlator.py                # windowed event merge by suspicious_ip
+│   ├── mitre_lookup.py              # read-only tool exposed to the agent via policy.allow()
+│   └── schemas.py                   # JSON contract validation (request/response shape from Sec. 4)
+│
+├── shields/                        # ENFORCEMENT — sole owner of subprocess/psutil kill authority
+│   ├── __init__.py
+│   ├── base.py                      # FirewallShield / ProcessShield interfaces (strategy pattern)
+│   ├── linux_shield.py
+│   ├── windows_shield.py
+│   ├── privilege_check.py
+│   └── quarantine.py
+│
+├── database/                       # STORAGE — sole owner of all SQLite access
+│   ├── __init__.py
+│   ├── connection.py                # WAL-mode connection factory, one short-lived conn per write
+│   ├── schema.py                    # CREATE TABLE statements, migrations
+│   └── repository.py                # typed insert/query functions for all 4 tables
+│
+├── range_simulator/                # DEMO — loopback-only, hard-locked to 127.0.0.1
+│   ├── __init__.py
+│   ├── sim_bruteforce.py
+│   ├── sim_synscan.py
+│   └── sim_canary_burst.py
+│
+├── ui/                              # PRESENTATION — main thread only, polls ui_bus
+│   ├── __init__.py
+│   ├── app.py                       # CustomTkinter root window + .after() poll loop
+│   ├── panels/
+│   │   ├── topology_panel.py
+│   │   ├── terminal_feed.py
+│   │   ├── mitre_heatmap.py
+│   │   └── incident_detail.py
+│   ├── theme.py                     # dark/cyberpunk color + font tokens
+│   └── voice_alerts.py              # pyttsx3 dedicated worker thread + queue
+│
+└── shared/
+    ├── __init__.py
+    ├── event_bus.py                  # thread-safe queue.Queue (sensors -&gt; brain) and ui_bus (all -&gt; UI)
+    └── logger.py                     # structured logging, one logger per subsystem
+</code></pre>
+<h3>Folder responsibilities at a glance</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Responsibility</th>
+<th>May call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sensors/</code></td>
+<td>Observe, normalize, enqueue</td>
+<td><code>shared/event_bus.py</code> only</td>
+</tr>
+<tr>
+<td><code>core/</code></td>
+<td>Correlate, reason via Antigravity, recommend</td>
+<td><code>shared/</code>, <code>database/</code>, read-only tools in <code>core/mitre_lookup.py</code></td>
+</tr>
+<tr>
+<td><code>shields/</code></td>
+<td>Execute OS-level containment</td>
+<td><code>shared/</code>, <code>database/</code> — never called by <code>sensors/</code></td>
+</tr>
+<tr>
+<td><code>database/</code></td>
+<td>Persist every state transition</td>
+<td>nothing above it; pure data layer</td>
+</tr>
+<tr>
+<td><code>range_simulator/</code></td>
+<td>Generate safe test traffic for demo</td>
+<td>targets <code>sensors/</code> and <code>shields/</code> externally, like a real attacker would, not via direct function calls</td>
+</tr>
+<tr>
+<td><code>ui/</code></td>
+<td>Render state, accept human approval clicks</td>
+<td><code>shared/ui_bus</code>, <code>shields/</code> (only on explicit user click in <code>HUMAN_APPROVAL</code> mode)</td>
+</tr>
+</tbody>
+</table>
+<p>This mirrors the PRD's module split (God Eye / Ultron Core / Shields / Dashboard) but reorganizes by <strong>technical responsibility</strong> rather than product-feature name, which is what keeps the <code>core/</code> package the single, auditable choke point for every action the agent is allowed to trigger.</p>
+
+</body></html>

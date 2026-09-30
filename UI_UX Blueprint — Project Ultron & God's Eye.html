@@ -1,0 +1,213 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>UI/UX Wireframe Blueprint &amp; Class Skeleton</h1>
+<h2>Project Ultron &amp; God's Eye — Command Center Dashboard</h2>
+<p><strong>Library:</strong> <code>customtkinter</code> | <strong>Companion docs:</strong> PRD v1.0, TRD v1.0</p>
+<hr>
+<h2>1. Wireframe / Mockup</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────────────┐
+│  ⛨ ULTRON // GOD&#39;S EYE          ● SYSTEM ARMED           [ AUTO ●───○ HUMAN ]    │ ← HeaderFrame
+├───────────────────────┬──────────────────────────────────┬─────────────────────────┤
+│  GOD EYE — RADAR       │  ULTRON CORE — BRAIN FEED         │  SHIELD DEPLOYMENT LOG  │
+│  ────────────────────  │  ───────────────────────────────  │  ─────────────────────  │
+│  ● 192.168.1.1  auth   │  &gt; [12:04:01] telemetry batch     │  ✓ 12:04:03 FW DROP     │
+│    aa:bb:.. router     │    received (3 events, src=..44)  │    203.0.113.44         │
+│                        │                                    │    latency: 118ms       │
+│  ● 192.168.1.14 auth   │  &gt; [12:04:02] ultron-agent →       │                          │
+│    cc:dd:.. laptop     │    { risk_score: 91,               │  ✓ 12:04:07 PID KILLED  │
+│                        │      severity: &#34;CRITICAL&#34;,         │    pid 4821              │
+│  ▲ 192.168.1.203 ROGUE │      mitre_id: &#34;T1110&#34;,            │    latency: 94ms         │
+│    ee:ff:.. UNKNOWN    │      mitre_tactic:                 │                          │
+│                        │       &#34;Credential Access&#34;,         │  … scrollable log …      │
+│  … scrollable list …   │      recommended_action:           │                          │
+│                        │       &#34;firewall_block&#34; }           ├─────────────────────────┤
+│  ────────────────────  │                                    │  CYBER RANGE             │
+│  HONEYPOT (FTP:21)     │  &gt; [12:04:03] shield dispatched     │  ─────────────────────  │
+│    ● ACTIVE            │    -&gt; firewall_block(203.0.113.44)  │  [ Simulate Brute Force ]│
+│                        │                                    │  [ Simulate Port Scan   ]│
+│  CANARY FILES          │  … scrollable terminal feed …      │  [ Trigger Canary       ]│
+│    ● ACTIVE (3 traps)  │                                    │                          │
+│                        │                                    │  Last latency: 118ms    │
+└───────────────────────┴──────────────────────────────────┴─────────────────────────┘
+</code></pre>
+<p><strong>Color mapping (matches your palette):</strong></p>
+<ul>
+<li>Background base: <code>#0B0F19</code> for the root window and all frames; a slightly lighter <code>#131826</code> for card/panel surfaces so panels read as distinct from the root.</li>
+<li>Radar list rows: authorized = Terminal Green <code>#00E676</code> bullet, rogue/unknown = Alert Red <code>#FF3366</code> bullet with a <code>▲</code> glyph.</li>
+<li>Brain feed text: Neon Cyan <code>#00E5FF</code> for normal telemetry lines, Alert Red <code>#FF3366</code> for CRITICAL/HIGH severity lines, all in a monospaced font (<code>Consolas</code> / <code>Courier New</code> fallback).</li>
+<li>Header status dot: Terminal Green when armed and healthy, Alert Red pulsing (color swap on a timer) when a CRITICAL incident is open.</li>
+<li>Shield log entries: Terminal Green <code>✓</code> prefix for completed containment, Neon Cyan for <code>PENDING</code> (human-approval mode).</li>
+</ul>
+<h2>2. Python Class Skeleton — <code>main_window.py</code></h2>
+<pre><code class="language-python">&#34;&#34;&#34;
+main_window.py — Command Center UI shell for Project Ultron &amp; God&#39;s Eye.
+
+Structural skeleton only: no sensor/agent/shield wiring yet. Each class owns
+one region of the grid and exposes update_* methods that the eventual
+controller (main.py) will call from the UI-thread poll loop — never from a
+background thread directly. See Section 3 for the threading contract.
+&#34;&#34;&#34;
+
+import customtkinter as ctk
+from theme import Theme  # color/font tokens, defined separately
+
+
+class UltronDashboardApp(ctk.CTk):
+    &#34;&#34;&#34;Root window. Owns the grid layout, all child frames, and the
+    single .after()-driven poll loop that drains shared.event_bus.ui_bus.
+    Nothing outside this class ever calls a widget&#39;s .configure()/.insert()
+    directly — everything routes through this poll loop.
+    &#34;&#34;&#34;
+
+    def __init__(self, ui_bus, on_toggle_response_mode, on_simulate):
+        super().__init__()
+        self.title(&#34;ULTRON // GOD&#39;S EYE — Command Center&#34;)
+        self.geometry(&#34;1600x900&#34;)
+        self.configure(fg_color=Theme.BG_ROOT)
+
+        self._ui_bus = ui_bus
+        self._on_toggle_response_mode = on_toggle_response_mode
+        self._on_simulate = on_simulate
+
+        self._configure_grid()
+        self._build_frames()
+        self._start_poll_loop()
+
+    def _configure_grid(self) -&gt; None:
+        &#34;&#34;&#34;3-column body (Radar | Brain Feed | Shields+Range) under a
+        full-width header row. Center column gets the largest weight.&#34;&#34;&#34;
+        ...
+
+    def _build_frames(self) -&gt; None:
+        self.header = HeaderFrame(
+            self, on_toggle_response_mode=self._on_toggle_response_mode
+        )
+        self.radar = RadarFrame(self)
+        self.brain_feed = BrainFeedFrame(self)
+        self.shield_log = ShieldLogFrame(self)
+        self.range_panel = RangeFrame(self, on_simulate=self._on_simulate)
+        # grid placement calls omitted from skeleton
+        ...
+
+    def _start_poll_loop(self, interval_ms: int = 100) -&gt; None:
+        &#34;&#34;&#34;The ONLY bridge between background threads and Tk widgets.
+        Drains self._ui_bus (thread-safe queue.Queue) each tick and
+        routes each message to the right frame&#39;s update_* method.&#34;&#34;&#34;
+        ...
+        self.after(interval_ms, self._start_poll_loop, interval_ms)
+
+    def _dispatch_ui_event(self, event: dict) -&gt; None:
+        &#34;&#34;&#34;Pattern-match event[&#39;type&#39;] -&gt; radar.update_asset(...) /
+        brain_feed.append_log(...) / shield_log.append_entry(...) /
+        header.set_system_status(...). Skeleton only.&#34;&#34;&#34;
+        ...
+
+
+class HeaderFrame(ctk.CTkFrame):
+    &#34;&#34;&#34;Top bar: title/logo, system status indicator, autonomous shield toggle.&#34;&#34;&#34;
+
+    def __init__(self, master, on_toggle_response_mode):
+        super().__init__(master, fg_color=Theme.BG_PANEL, height=64)
+        self._on_toggle_response_mode = on_toggle_response_mode
+
+        self.title_label: ctk.CTkLabel = ...      # &#34;⛨ ULTRON // GOD&#39;S EYE&#34;
+        self.status_dot: ctk.CTkLabel = ...        # colored ● + &#34;SYSTEM ARMED&#34;
+        self.mode_switch: ctk.CTkSwitch = ...       # AUTO &lt;-&gt; HUMAN toggle
+
+    def set_system_status(self, armed: bool, critical_open: bool) -&gt; None:
+        &#34;&#34;&#34;Update status dot color/text. Called only from the poll loop.&#34;&#34;&#34;
+        ...
+
+    def _handle_switch_toggled(self) -&gt; None:
+        &#34;&#34;&#34;Local Tk callback (safe — runs on main thread already);
+        forwards the new mode to the controller via self._on_toggle_response_mode.&#34;&#34;&#34;
+        ...
+
+
+class RadarFrame(ctk.CTkFrame):
+    &#34;&#34;&#34;Left panel — God Eye: scrollable asset list + honeypot/canary status.&#34;&#34;&#34;
+
+    def __init__(self, master):
+        super().__init__(master, fg_color=Theme.BG_PANEL)
+
+        self.asset_list: ctk.CTkScrollableFrame = ...   # rows added dynamically
+        self._asset_rows: dict[str, ctk.CTkFrame] = {}   # mac_address -&gt; row widget
+
+        self.honeypot_status: ctk.CTkLabel = ...
+        self.canary_status: ctk.CTkLabel = ...
+
+    def update_asset(self, mac: str, ip: str, authorized: bool) -&gt; None:
+        &#34;&#34;&#34;Insert or update a single row; color per Theme.OK / Theme.ALERT.&#34;&#34;&#34;
+        ...
+
+    def set_honeypot_active(self, active: bool) -&gt; None:
+        ...
+
+    def set_canary_active(self, active: bool, trap_count: int) -&gt; None:
+        ...
+
+
+class BrainFeedFrame(ctk.CTkFrame):
+    &#34;&#34;&#34;Center panel — Ultron Core: terminal-style scrollable log of
+    telemetry batches, agent JSON output, risk scores, MITRE tags.&#34;&#34;&#34;
+
+    def __init__(self, master):
+        super().__init__(master, fg_color=Theme.BG_PANEL)
+
+        self.feed_box: ctk.CTkTextbox = ...   # font=Theme.FONT_MONO, state=&#34;disabled&#34;
+
+    def append_log(self, text: str, severity: str = &#34;INFO&#34;) -&gt; None:
+        &#34;&#34;&#34;Append a line, colored per severity (Theme.CYAN default,
+        Theme.ALERT for HIGH/CRITICAL). Auto-scrolls to bottom.
+        Must only run on the main thread (called from the poll loop).&#34;&#34;&#34;
+        ...
+
+
+class ShieldLogFrame(ctk.CTkFrame):
+    &#34;&#34;&#34;Right panel, top half — completed/pending shield actions.&#34;&#34;&#34;
+
+    def __init__(self, master):
+        super().__init__(master, fg_color=Theme.BG_PANEL)
+
+        self.log_box: ctk.CTkTextbox = ...
+
+    def append_entry(self, shield_type: str, target: str,
+                      latency_ms: int | None, pending: bool = False) -&gt; None:
+        &#34;&#34;&#34;e.g. &#39;✓ 12:04:03 FW DROP 203.0.113.44 | latency: 118ms&#39;
+        or a cyan &#39;PENDING — awaiting approval&#39; line in HUMAN mode.&#34;&#34;&#34;
+        ...
+
+
+class RangeFrame(ctk.CTkFrame):
+    &#34;&#34;&#34;Right panel, bottom half — Cyber Range simulator buttons.&#34;&#34;&#34;
+
+    def __init__(self, master, on_simulate):
+        super().__init__(master, fg_color=Theme.BG_PANEL)
+        self._on_simulate = on_simulate
+
+        self.btn_bruteforce: ctk.CTkButton = ...   # &#34;Simulate Brute Force&#34;
+        self.btn_portscan: ctk.CTkButton = ...      # &#34;Simulate Port Scan&#34;
+        self.btn_canary: ctk.CTkButton = ...        # &#34;Trigger Canary&#34;
+        self.last_latency_label: ctk.CTkLabel = ...
+
+    def _handle_click(self, scenario: str) -&gt; None:
+        &#34;&#34;&#34;Local Tk callback; forwards scenario name to controller via
+        self._on_simulate (which starts the sim on a background thread —
+        the button click itself never blocks).&#34;&#34;&#34;
+        ...
+
+    def set_last_latency(self, ms: int) -&gt; None:
+        ...
+</code></pre>
+<h2>3. Thread Safety: How Background Threads Update This UI</h2>
+<p><code>customtkinter</code> (like all Tkinter) is <strong>not thread-safe</strong> — any widget mutation from a thread other than the main loop's thread risks a crash or a silently corrupted UI. This dashboard avoids that with a single rule: <strong>background threads never touch a widget. Ever.</strong></p>
+<p>The mechanism:</p>
+<ol>
+<li><strong><code>shared/event_bus.py</code> exposes two queues</strong>, not one: <code>sensor_queue</code> (sensors → brain, per the TRD pipeline) and <strong><code>ui_bus</code></strong> (everything → UI). Every subsystem — sensors, the brain, shields — pushes a small serializable dict describing <em>what changed</em> onto <code>ui_bus</code> (e.g. <code>{&quot;type&quot;: &quot;asset_update&quot;, &quot;mac&quot;: &quot;...&quot;, &quot;authorized&quot;: False}</code>), never a widget reference, never a direct call into <code>ui/</code>.</li>
+<li><strong><code>UltronDashboardApp._start_poll_loop</code></strong> is the <em>only</em> code that reads <code>ui_bus</code>, and it runs via <code>self.after(100, self._start_poll_loop)</code> — a Tkinter-native mechanism that schedules its own callback back onto the main event loop, so it always executes on the same thread that owns every widget. This is the standard, safe pattern for Tkinter + background work (the alternative, calling <code>.event_generate()</code> from a worker thread, is more fragile and unnecessary here).</li>
+<li>Each tick, the poll loop drains everything currently sitting in <code>ui_bus</code> (non-blocking <code>get_nowait()</code> in a loop until <code>queue.Empty</code>) and fans each message out to the right frame's <code>update_*</code>/<code>append_*</code> method. Because this dispatch happens <em>inside</em> the <code>.after()</code> callback, every widget mutation is guaranteed to happen on the main thread — sensors, the Antigravity agent call, and shield execution can all take as long as they need on their own threads without ever freezing the window.</li>
+<li><strong>Button clicks flow the opposite direction safely for free:</strong> Tk callbacks (<code>_handle_click</code>, <code>_handle_switch_toggled</code>) already run on the main thread by construction, so they can immediately call back into the controller (<code>on_simulate</code>, <code>on_toggle_response_mode</code>) — the controller is then responsible for kicking that work onto a background thread if it's not instant (e.g. <code>on_simulate</code> starts the <code>range_simulator/</code> scenario on its own <code>threading.Thread</code>, it doesn't run the attack script inline in the click handler).</li>
+</ol>
+<p>Net effect: the 100ms poll tick is the <em>only</em> seam between &quot;many background threads doing real work&quot; and &quot;one Tkinter main loop that must never block,&quot; and it's small/cheap enough that it doesn't visibly compete with the 500ms containment-latency budget.</p>
+
+</body></html>

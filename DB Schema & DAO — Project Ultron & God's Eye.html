@@ -1,0 +1,251 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Database Schema &amp; Data Access Layer</h1>
+<h2>Project Ultron &amp; God's Eye — SQLite Backend Foundation</h2>
+<p><strong>Companion docs:</strong> PRD v1.0, TRD v1.0, UI/UX Blueprint v1.0</p>
+<hr>
+<h2>1. SQL DDL</h2>
+<pre><code class="language-sql">PRAGMA journal_mode = WAL;
+PRAGMA foreign_keys = ON;
+PRAGMA synchronous = NORMAL;   -- safe durability/perf tradeoff under WAL
+
+-- ─────────────────────────────────────────────────────────────
+-- network_assets — every device God Eye&#39;s ARP radar has ever seen
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS network_assets (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address      TEXT    NOT NULL UNIQUE,
+    mac_address     TEXT    NOT NULL,
+    hostname        TEXT,
+    is_authorized   INTEGER NOT NULL DEFAULT 0 CHECK (is_authorized IN (0, 1)),
+    first_seen      TEXT    NOT NULL DEFAULT (STRFTIME(&#39;%Y-%m-%dT%H:%M:%fZ&#39;, &#39;NOW&#39;)),
+    last_seen       TEXT    NOT NULL DEFAULT (STRFTIME(&#39;%Y-%m-%dT%H:%M:%fZ&#39;, &#39;NOW&#39;))
+);
+
+CREATE INDEX IF NOT EXISTS idx_assets_mac ON network_assets (mac_address);
+CREATE INDEX IF NOT EXISTS idx_assets_authorized ON network_assets (is_authorized);
+
+-- ─────────────────────────────────────────────────────────────
+-- telemetry_events — raw sensor output, pre-AI-analysis
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS telemetry_events (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_module   TEXT    NOT NULL CHECK (
+                        source_module IN (&#39;RADAR&#39;, &#39;CANARY&#39;, &#39;HONEYPOT&#39;, &#39;AUTH_LOG&#39;)
+                    ),
+    suspicious_ip   TEXT,
+    raw_payload     TEXT    NOT NULL,      -- JSON blob, validated at the app layer
+    correlated      INTEGER NOT NULL DEFAULT 0 CHECK (correlated IN (0, 1)),
+    timestamp       TEXT    NOT NULL DEFAULT (STRFTIME(&#39;%Y-%m-%dT%H:%M:%fZ&#39;, &#39;NOW&#39;))
+);
+
+CREATE INDEX IF NOT EXISTS idx_telemetry_ip ON telemetry_events (suspicious_ip);
+CREATE INDEX IF NOT EXISTS idx_telemetry_timestamp ON telemetry_events (timestamp);
+CREATE INDEX IF NOT EXISTS idx_telemetry_uncorrelated ON telemetry_events (correlated)
+    WHERE correlated = 0;
+
+-- ─────────────────────────────────────────────────────────────
+-- incidents — Ultron Core&#39;s reasoning output over correlated events
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS incidents (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_uid    TEXT    NOT NULL UNIQUE,   -- e.g. UUID4, generated app-side
+    risk_score      INTEGER NOT NULL CHECK (risk_score BETWEEN 0 AND 100),
+    severity        TEXT    NOT NULL CHECK (
+                        severity IN (&#39;LOW&#39;, &#39;MEDIUM&#39;, &#39;HIGH&#39;, &#39;CRITICAL&#39;)
+                    ),
+    mitre_tactic    TEXT,                       -- e.g. &#34;Credential Access&#34;
+    mitre_id        TEXT,                       -- e.g. &#34;T1110&#34;
+    summary         TEXT,                       -- plain-English agent explanation
+    status          TEXT    NOT NULL DEFAULT &#39;ACTIVE&#39; CHECK (
+                        status IN (&#39;ACTIVE&#39;, &#39;CONTAINED&#39;, &#39;RESOLVED&#39;, &#39;FALSE_POSITIVE&#39;)
+                    ),
+    created_at      TEXT    NOT NULL DEFAULT (STRFTIME(&#39;%Y-%m-%dT%H:%M:%fZ&#39;, &#39;NOW&#39;))
+);
+
+CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents (status);
+CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents (severity);
+
+-- ─────────────────────────────────────────────────────────────
+-- shield_actions — every containment action Shields has executed
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS shield_actions (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_id         INTEGER NOT NULL REFERENCES incidents (id) ON DELETE RESTRICT,
+    shield_type         TEXT    NOT NULL CHECK (
+                            shield_type IN (&#39;FIREWALL_DROP&#39;, &#39;PROCESS_KILL&#39;, &#39;QUARANTINE&#39;)
+                        ),
+    target_identifier   TEXT    NOT NULL,        -- IP address or PID, as text
+    latency_ms          INTEGER,                  -- NULL while PENDING approval
+    status              TEXT    NOT NULL DEFAULT &#39;COMPLETED&#39; CHECK (
+                            status IN (&#39;PENDING&#39;, &#39;COMPLETED&#39;, &#39;FAILED&#39;)
+                        ),
+    executed_at         TEXT    NOT NULL DEFAULT (STRFTIME(&#39;%Y-%m-%dT%H:%M:%fZ&#39;, &#39;NOW&#39;))
+);
+
+CREATE INDEX IF NOT EXISTS idx_shield_incident ON shield_actions (incident_id);
+</code></pre>
+<p><strong>Design notes:</strong></p>
+<ul>
+<li>Every table uses <code>CHECK</code> constraints on its enum-like columns (<code>status</code>, <code>severity</code>, <code>source_module</code>, <code>shield_type</code>) instead of trusting the app layer alone — a malformed agent response or a typo in <code>shields/</code> fails loudly at the DB, not silently.</li>
+<li><code>incidents</code> and <code>shield_actions</code> are <strong>append-only by convention</strong>: status changes (<code>ACTIVE → CONTAINED</code>) are <code>UPDATE</code>s on the status column only, never row deletion or rewriting of <code>risk_score</code>/<code>summary</code>/<code>latency_ms</code> after the fact — this preserves the audit trail the TRD requires.</li>
+<li><code>shield_actions.status = 'PENDING'</code> with <code>latency_ms = NULL</code> is how <code>HUMAN_APPROVAL</code> mode represents a queued-but-not-yet-executed action; the row is updated in place to <code>COMPLETED</code> + a real latency once a human clicks &quot;Deploy Shield,&quot; rather than inserting a second row.</li>
+<li><code>telemetry_events.correlated</code> + the partial index lets the brain's consumer loop efficiently pull only unprocessed events without a full table scan as the log grows.</li>
+</ul>
+<h2>2. Python DAO Skeleton — <code>database/manager.py</code></h2>
+<pre><code class="language-python">&#34;&#34;&#34;
+database/manager.py — sole owner of all SQLite access for Project Ultron.
+
+No other module opens a sqlite3 connection directly. Sensors, core/, shields/,
+and ui/ all go through DatabaseManager&#39;s public methods.
+&#34;&#34;&#34;
+
+import queue
+import sqlite3
+import threading
+from pathlib import Path
+from typing import Any
+
+
+class DatabaseManager:
+    &#34;&#34;&#34;Thread-safe SQLite access via a single dedicated writer thread.
+
+    Reads: any thread may call a read method directly — each opens its own
+    short-lived connection (WAL mode allows concurrent readers).
+    Writes: never executed on the calling thread. Every write method builds
+    a (sql, params) job and puts it on an internal queue; one dedicated
+    writer thread drains that queue and is the only thread that ever holds
+    a write connection. This sidesteps SQLite&#39;s &#34;one writer at a time&#34;
+    limitation without callers blocking on locks themselves.
+    &#34;&#34;&#34;
+
+    def __init__(self, db_path: str | Path):
+        self._db_path = str(db_path)
+        self._write_queue: queue.Queue[tuple[str, tuple, &#34;queue.Queue | None&#34;]] = queue.Queue()
+        self._writer_thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
+
+    # ── lifecycle ────────────────────────────────────────────────
+
+    def init_db(self, schema_path: str | Path) -&gt; None:
+        &#34;&#34;&#34;Run the DDL in schema.sql once at startup (idempotent —
+        every CREATE TABLE/INDEX uses IF NOT EXISTS). Also sets
+        PRAGMA journal_mode=WAL on the connection used to do so.&#34;&#34;&#34;
+        ...
+
+    def start(self) -&gt; None:
+        &#34;&#34;&#34;Spawn the dedicated writer thread (daemon=True) and begin
+        draining self._write_queue in a loop.&#34;&#34;&#34;
+        ...
+
+    def stop(self) -&gt; None:
+        &#34;&#34;&#34;Signal the writer thread to finish its queue and exit cleanly
+        (used on app shutdown).&#34;&#34;&#34;
+        ...
+
+    def _writer_loop(self) -&gt; None:
+        &#34;&#34;&#34;Runs only on the writer thread. Opens ONE long-lived
+        connection with check_same_thread=False (safe here because it&#39;s
+        never touched from any other thread), pulls (sql, params, ack_q)
+        tuples, executes + commits each, and puts the result/row id back
+        on ack_q if the caller wants confirmation (e.g. new incident id).&#34;&#34;&#34;
+        ...
+
+    def _get_read_connection(self) -&gt; sqlite3.Connection:
+        &#34;&#34;&#34;Opens a short-lived read-only connection for the calling
+        thread. Safe under WAL because readers don&#39;t block the writer
+        and vice versa.&#34;&#34;&#34;
+        ...
+
+    # ── writes (queued, executed on writer thread) ─────────────────
+
+    def upsert_network_asset(
+        self, ip_address: str, mac_address: str, hostname: str | None,
+        is_authorized: bool,
+    ) -&gt; None:
+        &#34;&#34;&#34;INSERT ... ON CONFLICT(ip_address) DO UPDATE SET last_seen=...,
+        mac_address=..., hostname=... Queued as a fire-and-forget write.&#34;&#34;&#34;
+        ...
+
+    def insert_telemetry_event(
+        self, source_module: str, suspicious_ip: str | None, raw_payload: str,
+    ) -&gt; None:
+        &#34;&#34;&#34;Queued fire-and-forget write from sensor threads.&#34;&#34;&#34;
+        ...
+
+    def mark_events_correlated(self, event_ids: list[int]) -&gt; None:
+        &#34;&#34;&#34;Batched UPDATE telemetry_events SET correlated=1 WHERE id IN (...),
+        called by core/correlator.py once a batch has been sent to the agent.&#34;&#34;&#34;
+        ...
+
+    def log_incident(
+        self, incident_uid: str, risk_score: int, severity: str,
+        mitre_tactic: str | None, mitre_id: str | None, summary: str | None,
+    ) -&gt; int:
+        &#34;&#34;&#34;Queued write that WAITS for the writer thread&#39;s ack (via a
+        one-shot ack queue) so it can return the new incident&#39;s row id —
+        core/brain.py needs that id immediately to log the follow-up
+        shield_actions row.&#34;&#34;&#34;
+        ...
+
+    def update_incident_status(self, incident_id: int, status: str) -&gt; None:
+        &#34;&#34;&#34;UPDATE incidents SET status=? WHERE id=?. Status-column-only
+        update — never touches risk_score/summary after creation.&#34;&#34;&#34;
+        ...
+
+    def log_shield_action(
+        self, incident_id: int, shield_type: str, target_identifier: str,
+        latency_ms: int | None, status: str = &#34;COMPLETED&#34;,
+    ) -&gt; int:
+        &#34;&#34;&#34;Queued, ack-returning write (same pattern as log_incident) —
+        the ui/ShieldLogFrame wants the new row id to update it in place
+        if a PENDING action later completes.&#34;&#34;&#34;
+        ...
+
+    def complete_pending_shield_action(self, action_id: int, latency_ms: int) -&gt; None:
+        &#34;&#34;&#34;UPDATE shield_actions SET status=&#39;COMPLETED&#39;, latency_ms=?
+        WHERE id=?. Used by the HUMAN_APPROVAL &#39;Deploy Shield&#39; click path.&#34;&#34;&#34;
+        ...
+
+    # ── reads (direct, short-lived connection per call) ─────────────
+
+    def get_uncorrelated_events(self, limit: int = 100) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;SELECT * FROM telemetry_events WHERE correlated=0 ORDER BY
+        timestamp ASC LIMIT ?. Called by core/brain.py&#39;s consumer loop.&#34;&#34;&#34;
+        ...
+
+    def get_all_assets(self) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;For RadarFrame&#39;s initial population / periodic refresh.&#34;&#34;&#34;
+        ...
+
+    def get_repeat_offender_count(self, ip_address: str, window_hours: int = 24) -&gt; int:
+        &#34;&#34;&#34;COUNT of past incidents linked (via shield_actions.target_identifier
+        or telemetry_events.suspicious_ip) to this IP within the window —
+        feeds core/risk_scoring.py&#39;s heuristic.&#34;&#34;&#34;
+        ...
+
+    def get_recent_incidents(self, limit: int = 50) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;For IncidentDetail / natural-language case querying.&#34;&#34;&#34;
+        ...
+
+    def get_shield_actions_for_incident(self, incident_id: int) -&gt; list[dict[str, Any]]:
+        ...
+
+    def query_incidents_by_filter(
+        self, status: str | None = None, min_severity: str | None = None,
+        subnet_prefix: str | None = None, since: str | None = None,
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Backing query for the UI&#39;s natural-language case search — the
+        agent translates free text into these structured filter args
+        (never raw SQL) before this method runs a parameterized query.&#34;&#34;&#34;
+        ...
+</code></pre>
+<h2>3. Thread-Safe Write Handling</h2>
+<p>Two things make SQLite genuinely safe here, and it's important they're both in play rather than relying on either alone:</p>
+<ol>
+<li><strong>WAL mode</strong> (<code>PRAGMA journal_mode=WAL</code>) lets any number of reader threads run concurrently with a single writer without blocking each other — this is why every <code>get_*</code> method above can open its own connection on whatever thread calls it (sensor threads, the UI poll loop, the brain thread) with no coordination needed.</li>
+<li><strong>A single dedicated writer thread absorbs all writes.</strong> Even under WAL, SQLite still allows only <em>one</em> writer transaction at a time — if <code>sensors/</code>, <code>core/brain.py</code>, and <code>shields/</code> all opened their own write connections and committed concurrently, you'd hit intermittent <code>database is locked</code> errors under load (exactly the kind of thing that looks fine in testing and then fails live on stage). Instead, every write method (<code>upsert_network_asset</code>, <code>insert_telemetry_event</code>, <code>log_incident</code>, <code>log_shield_action</code>, etc.) does no I/O itself — it just packages <code>(sql, params)</code> and puts it on <code>self._write_queue</code>, and only <code>_writer_loop</code>, running on its own thread with <code>check_same_thread=False</code> set safely (because no other thread ever uses that specific connection object), actually executes and commits. This turns SQLite's single-writer constraint into a non-issue instead of a race condition: writes are serialized by construction, not by hoping threads don't collide.</li>
+<li><strong>Writes that need a result (<code>log_incident</code>, <code>log_shield_action</code>) pass a one-shot <code>queue.Queue()</code> back through the job tuple</strong> — the writer thread executes the insert, then <code>.put()</code>s the new row id on that ack queue, and the calling thread (e.g. <code>core/brain.py</code>, which needs the incident id right away to log the paired shield action) blocks briefly on <code>ack_q.get()</code>. This keeps the API synchronous-feeling for callers that need the id, while every other write stays pure fire-and-forget for maximum throughput from the sensor threads.</li>
+</ol>
+
+</body></html>

@@ -1,0 +1,163 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Folder Structure &amp; Execution Plan</h1>
+<h2>Project Ultron &amp; God's Eye — Build Order</h2>
+<p><strong>Companion docs:</strong> PRD v1.0, TRD v1.0, UI/UX Blueprint v1.0, DB Schema &amp; DAO v1.0</p>
+<hr>
+<h2>1. Final Folder Structure</h2>
+<pre><code>ultron-god-eye/
+├── main.py                         # boots everything, wires threads together, launches UI
+├── config.py                       # RESPONSE_MODE, ports, thresholds, DB path, GEMINI_API_KEY read
+├── requirements.txt
+├── ultron.db                       # SQLite file (created at runtime, gitignored)
+│
+├── shared/                         # PHASE 0 — zero dependencies, everything else needs this
+│   ├── __init__.py
+│   ├── event_bus.py                 # sensor_queue + ui_bus (thread-safe queue.Queue)
+│   └── logger.py                    # structured per-subsystem logging
+│
+├── database/                       # PHASE 0 — depends only on shared/
+│   ├── __init__.py
+│   ├── schema.sql                   # the DDL from the DB Schema doc
+│   ├── manager.py                   # DatabaseManager (writer thread + read connections)
+│   └── models.py                    # typed dict/dataclass row shapes
+│
+├── sensors/                        # PHASE 1 — depends on shared/, database/
+│   ├── __init__.py
+│   ├── arp_scanner.py
+│   ├── canary_monitor.py
+│   └── honeypot_listener.py
+│
+├── core/                           # PHASE 2 — depends on shared/, database/, sensors/ (their output shape)
+│   ├── __init__.py
+│   ├── agent_client.py              # google-antigravity Agent + policy hooks
+│   ├── schemas.py                   # request/response JSON contract validation
+│   ├── mitre_lookup.py              # read-only tool exposed to the agent
+│   ├── risk_scoring.py
+│   ├── correlator.py
+│   └── brain.py                     # the consumer loop tying all of core/ together
+│
+├── shields/                        # PHASE 3 — depends on shared/, database/, core/ (decision shape)
+│   ├── __init__.py
+│   ├── base.py                      # FirewallShield / ProcessShield interfaces
+│   ├── linux_shield.py
+│   ├── windows_shield.py
+│   ├── privilege_check.py
+│   └── quarantine.py
+│
+├── range_simulator/                # PHASE 4 — depends on sensors/, shields/ existing (targets them externally)
+│   ├── __init__.py
+│   ├── sim_bruteforce.py
+│   ├── sim_synscan.py
+│   └── sim_canary_burst.py
+│
+└── ui/                              # PHASE 5 — depends on shared/ (ui_bus) + wants everything else to show data
+    ├── __init__.py
+    ├── theme.py
+    ├── main_window.py                # UltronDashboardApp + all frames
+    ├── panels/
+    │   ├── header_frame.py
+    │   ├── radar_frame.py
+    │   ├── brain_feed_frame.py
+    │   ├── shield_log_frame.py
+    │   └── range_frame.py
+    └── voice_alerts.py               # pyttsx3 worker thread
+</code></pre>
+<h2>2. Dependency Graph (why the phase order below is correct)</h2>
+<pre><code>shared/  ──►  database/
+                  │
+                  ▼
+              sensors/  ──►  core/  ──►  shields/  ──►  range_simulator/
+                  │             │            │
+                  └─────────────┴────────────┴──►  ui/  (consumes ui_bus from all of them)
+</code></pre>
+<p><code>ui/</code> is deliberately last even though it's the most visually impressive part — every frame is just a dumb renderer of messages that other modules push onto <code>ui_bus</code>. Building it first would mean building it against fake data, then rewiring it later. Building it last means it's wired against the real pipeline from the first line of code.</p>
+<h2>3. Step-by-Step Execution Plan</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Module(s)</th>
+<th>Deliverable</th>
+<th>Can be demoed standalone?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><code>shared/event_bus.py</code>, <code>shared/logger.py</code></td>
+<td>Two working queues + logging setup</td>
+<td>No — pure plumbing</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><code>database/schema.sql</code>, <code>database/manager.py</code>, <code>database/models.py</code></td>
+<td><code>DatabaseManager</code> that boots, creates tables, accepts a test write/read</td>
+<td>Yes — insert a fake row, read it back</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><code>sensors/arp_scanner.py</code></td>
+<td>Scapy sweep pushing real asset data into <code>event_bus</code> and <code>network_assets</code></td>
+<td>Yes — run it, watch rows appear in <code>ultron.db</code></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><code>sensors/canary_monitor.py</code>, <code>sensors/honeypot_listener.py</code></td>
+<td>Remaining two sensors, same pattern</td>
+<td>Yes — touch a canary file, watch the event</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><code>core/agent_client.py</code>, <code>core/schemas.py</code></td>
+<td>Antigravity <code>Agent</code> wired with system instructions + policy hooks, returns validated JSON for a hardcoded test payload</td>
+<td>Yes — call it directly with a sample telemetry batch</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td><code>core/correlator.py</code>, <code>core/risk_scoring.py</code>, <code>core/mitre_lookup.py</code>, <code>core/brain.py</code></td>
+<td>Full consumer loop: real sensor events → correlated batch → agent → logged incident</td>
+<td>Yes — run sensors + brain together, watch <code>incidents</code> table populate</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td><code>shields/base.py</code>, <code>shields/linux_shield.py</code>, <code>shields/windows_shield.py</code>, <code>shields/privilege_check.py</code></td>
+<td>Real firewall/process containment wired to <code>brain.py</code>'s <code>recommended_action</code></td>
+<td>Yes — trigger a real (safe, loopback) block and see the OS-level rule appear</td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td><code>shields/quarantine.py</code></td>
+<td>Host quarantine mode</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>9</strong></td>
+<td><code>range_simulator/*</code></td>
+<td>Three loopback-only attack scripts</td>
+<td>Yes — this is what proves Steps 3–8 actually work end to end</td>
+</tr>
+<tr>
+<td><strong>10</strong></td>
+<td><code>ui/theme.py</code>, <code>ui/main_window.py</code>, all <code>ui/panels/*</code></td>
+<td>Full dashboard wired to <code>ui_bus</code>, poll loop draining real events</td>
+<td>Yes — this is the full live demo</td>
+</tr>
+<tr>
+<td><strong>11</strong></td>
+<td><code>ui/voice_alerts.py</code></td>
+<td>pyttsx3 worker thread for critical alerts</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>12</strong></td>
+<td><code>main.py</code>, <code>config.py</code></td>
+<td>Final wiring: boot order, thread startup, graceful shutdown</td>
+<td>This is the actual <code>python main.py</code> that runs the whole thing</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this order and not UI-first:</strong> Steps 1–9 are each independently testable from the terminal/DB without any GUI — that means by the time you reach Step 10, every bug in sensors, the agent contract, or shield execution has already been caught and fixed against real data. The dashboard then becomes a thin, low-risk layer at the very end instead of the thing you're debugging blind under time pressure the night before the demo.</p>
+<p><strong>Suggested stopping points if time runs short:</strong> Steps 1–9 alone already satisfy a live terminal-based demo of full detect→reason→contain (you can literally <code>print()</code> from <code>brain.py</code> and <code>shields/</code>). Step 10 is what makes it <em>look</em> like a SOC command center for judges — prioritize it once 1–9 are solid, not before.</p>
+
+</body></html>

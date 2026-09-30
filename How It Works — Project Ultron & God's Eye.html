@@ -1,0 +1,73 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>How It Works</h1>
+<h2>Project Ultron &amp; God's Eye — End-to-End Walkthrough &amp; Pitch Notes</h2>
+<p><strong>Companion docs:</strong> PRD v1.0, TRD v1.0, UI/UX Blueprint v1.0, DB Schema &amp; DAO v1.0, Execution Plan v1.0</p>
+<hr>
+<h2>1. The System in One Paragraph</h2>
+<p>An attacker touches your network in some way — probes a port, tries to brute-force SSH, or messes with a file. <strong>God Eye's sensors</strong> (running quietly on background threads) catch that signal the instant it happens and drop it, as a small JSON event, onto a shared queue. <strong>Ultron's Brain</strong> — a single loop powered by the <code>google-antigravity</code> AI agent — picks that event up, figures out what it actually means (how dangerous, what kind of attack, MITRE classification), and decides what should be done about it. <strong>The Shields</strong> then execute that decision at the OS level — blocking the IP or killing the process — usually in well under half a second. Every single step of this, from the first probe to the final block, is written to a local SQLite database, so nothing is ever a black box: you can always answer &quot;what happened, when, and why did the system respond the way it did.&quot;</p>
+<h2>2. Walkthrough — A Real Attack, Traced Through Every Module</h2>
+<p><strong>Scenario:</strong> an unauthorized machine on the network attempts an SSH brute-force against your host.</p>
+<ol>
+<li>
+<p><strong>God Eye notices.</strong> <code>sensors/arp_scanner.py</code> already flagged this device's MAC address as unrecognized the moment it joined the subnet — that alone created a <code>LOW</code> severity telemetry row. Now, <code>sensors/honeypot_listener.py</code> (or your real <code>auth.log</code> tail, depending on final scope) sees repeated failed authentication attempts from that same IP in rapid succession. Each attempt becomes a <code>telemetry_events</code> row: <code>{source_module: &quot;HONEYPOT&quot;, suspicious_ip: &quot;192.168.1.203&quot;, raw_payload: {...}}</code>.</p>
+</li>
+<li>
+<p><strong>The events queue up.</strong> These rows don't go straight to the AI one at a time — <code>shared/event_bus.py</code>'s queue holds them, and <code>core/correlator.py</code> waits for a short correlation window so that 8 failed-login attempts in 3 seconds become <strong>one</strong> batched payload instead of 8 separate, noisy incidents.</p>
+</li>
+<li>
+<p><strong>Ultron reasons about it.</strong> <code>core/brain.py</code> hands that batch to the <code>google-antigravity</code> <code>Agent</code>. The agent doesn't get to touch your firewall or kill anything itself — its only job is to return the structured verdict: <code>risk_score: 91</code>, <code>severity: &quot;CRITICAL&quot;</code>, <code>mitre_id: &quot;T1110&quot;</code>, <code>mitre_tactic: &quot;Credential Access&quot;</code>, <code>summary: &quot;Repeated SSH auth failures from unauthorized host 192.168.1.203&quot;</code>, <code>recommended_action: &quot;firewall_block&quot;</code>. This gets written to <code>incidents</code> immediately — the reasoning is on record even before anything is done about it.</p>
+</li>
+<li>
+<p><strong>A decision gets made about enforcement.</strong> If <code>config.RESPONSE_MODE == AUTONOMOUS</code>, <code>brain.py</code> calls <code>shields/linux_shield.py</code> (or <code>windows_shield.py</code>) right away. If it's <code>HUMAN_APPROVAL</code> mode, a <code>shield_actions</code> row is written as <code>PENDING</code> instead, and the dashboard lights up a &quot;Deploy Shield&quot; button for a human to click.</p>
+</li>
+<li>
+<p><strong>The Shield acts.</strong> <code>iptables -A INPUT -s 192.168.1.203 -j DROP</code> runs via <code>subprocess</code>. The time between step 1 (first detection) and this line executing is measured with <code>time.perf_counter()</code> — that's your headline &quot;contained in 118ms&quot; number.</p>
+</li>
+<li>
+<p><strong>Everything lands in the dashboard.</strong> While all of this was happening, every module was also pushing a message onto <code>ui_bus</code>. The Radar panel already showed this device with a red &quot;ROGUE&quot; marker from step 1. The Brain Feed panel streamed the raw JSON reasoning output live as it arrived in step 3. The Shield Log shows the block with its latency the instant step 5 completes. None of the UI code <em>decided</em> anything — it only ever renders what already happened elsewhere, which is why the dashboard can never desync from what the system actually did.</p>
+</li>
+<li>
+<p><strong>It's all still there afterward.</strong> Because <code>incidents</code> and <code>shield_actions</code> are append-only, you can open the app an hour later, click that incident, and reconstruct the entire chain — first sighting, AI reasoning, and containment action — from the database alone, with no live agent needed to explain it.</p>
+</li>
+</ol>
+<h2>3. What Makes Each Layer Trustworthy (not just functional)</h2>
+<ul>
+<li><strong>Detection is dumb on purpose.</strong> Sensors never interpret anything — they just observe and normalize. This means a sensor bug can produce noisy data, but it can never accidentally <em>decide</em> to block someone.</li>
+<li><strong>The AI reasons, it never acts.</strong> This is the single most important design decision in the whole system (Section 4 of the TRD) — <code>google-antigravity</code>'s policy hooks technically prevent the agent from calling anything except two read-only lookups. Every containment action is a deterministic function call in <code>shields/</code>, triggered by code you wrote and can read, not by whatever the model decided to do on a given inference.</li>
+<li><strong>Shields are the only code with execution authority</strong>, and even they respect a human-approval mode — so the &quot;autonomous&quot; part of the pitch is a configurable dial, not an unconditional claim.</li>
+<li><strong>Storage never lies retroactively.</strong> No row's core findings (<code>risk_score</code>, <code>summary</code>, <code>latency_ms</code>) are ever overwritten — only status fields transition. What the system decided in the moment is what the database still says a week later.</li>
+</ul>
+<h2>4. Demo Script (for the Cyber Range)</h2>
+<table>
+<thead>
+<tr>
+<th>You click...</th>
+<th>What the judges see happen, live</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Simulate Brute Force</code></td>
+<td>Radar shows the loopback &quot;attacker&quot; flagged, Brain Feed streams the AI's JSON verdict, Shield Log shows the IP dropped with a millisecond latency number</td>
+</tr>
+<tr>
+<td><code>Simulate Port Scan</code></td>
+<td>Same chain, different MITRE tag (<code>T1046</code>, Network Service Discovery) — proves the classification isn't hardcoded to one scenario</td>
+</tr>
+<tr>
+<td><code>Trigger Canary</code></td>
+<td>Canary status flips, PID resolved and shown, <code>process_kill</code> shield fires — proves the system also catches <em>post-compromise</em> file tampering, not just network-level attacks</td>
+</tr>
+</tbody>
+</table>
+<p>Running all three back-to-back in front of judges is the strongest proof point: three genuinely different attack shapes, correctly classified and correctly contained, with real timing numbers on screen — not a scripted fake.</p>
+<h2>5. Likely Judge Questions &amp; Straight Answers</h2>
+<ul>
+<li><strong>&quot;Is the AI actually deciding to block things, or is that hardcoded?&quot;</strong> → The agent produces the risk score, MITRE tag, and recommended action; whether that recommendation gets <em>executed</em> automatically or held for approval is a config toggle. The execution code itself is deterministic and auditable — that's intentional, not a limitation.</li>
+<li><strong>&quot;What stops this from blocking a legitimate device by mistake?&quot;</strong> → <code>is_authorized</code> on <code>network_assets</code>, the correlation window (so a single stray packet doesn't trigger anything), and the <code>HUMAN_APPROVAL</code> mode as a safety valve for exactly this concern.</li>
+<li><strong>&quot;Does this need the internet to work?&quot;</strong> → Detection and containment are fully local. Only the Antigravity/Gemini reasoning call goes outbound; everything else — sensors, database, shields, UI — runs air-gapped.</li>
+<li><strong>&quot;Why SQLite and not a real database server?&quot;</strong> → Zero-config, single-file, no server process to secure or crash — appropriate for a single-host defense agent, and WAL mode gives it real concurrent read/write behavior despite being &quot;just a file.&quot;</li>
+</ul>
+
+</body></html>

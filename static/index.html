@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT ULTRON - Cybersecurity Command Center</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-base: #030712;
+            --panel-bg: rgba(6, 11, 25, 0.6);
+            --border-glow: rgba(0, 229, 255, 0.3);
+            --border-dim: rgba(0, 229, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --cyan: #00e5ff;
+            --cyan-dim: rgba(0, 229, 255, 0.2);
+            --red: #ff3366;
+            --green: #00e676;
+            --yellow: #ffd600;
+            --purple: #7c4dff;
+            
+            --font-ui: 'Rajdhani', sans-serif;
+            --font-data: 'Share Tech Mono', monospace;
+            --font-title: 'Orbitron', sans-serif;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 229, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(0, 229, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        /* Scanline Overlay */
+        body::after {
+            content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px; z-index: 9999; pointer-events: none; opacity: 0.3;
+        }
+
+        /* ----- HEADER ----- */
+        header {
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-dim);
+            background: linear-gradient(180deg, rgba(10,15,30,0.9) 0%, rgba(5,10,20,0.9) 100%);
+            box-shadow: 0 4px 20px rgba(0,229,255,0.05);
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .logo-icon { 
+            font-size: 28px; color: var(--cyan); 
+            filter: drop-shadow(0 0 8px var(--cyan));
+        }
+        .logo-text h1 { 
+            font-family: var(--font-title); font-size: 20px; font-weight: 900; 
+            letter-spacing: 2px; text-shadow: 0 0 10px rgba(0,229,255,0.5); 
+        }
+        .logo-text p { 
+            font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; 
+        }
+
+        .header-nav { display: flex; gap: 20px; }
+        .nav-link {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--text-dim); font-size: 12px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+            padding: 8px 12px; transition: 0.3s; text-decoration: none;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: var(--cyan);
+            border-bottom: 2px solid var(--cyan);
+            text-shadow: 0 0 8px var(--cyan);
+        }
+
+        .header-right { display: flex; align-items: center; gap: 25px; }
+        .ai-status { display: flex; align-items: center; gap: 12px; background: rgba(0,229,255,0.05); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--border-dim); }
+        .ai-status-text { font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: flex-start; }
+        .ai-status-title { font-family: var(--font-title); font-size: 11px; letter-spacing: 1px; }
+        .status-indicator { display: flex; align-items: center; gap: 6px; color: var(--green); font-size: 10px; }
+        .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: blink 1.5s infinite; }
+        
+        .time-box { text-align: right; font-family: var(--font-data); }
+        .time-date { font-size: 11px; color: var(--text-dim); }
+        .time-clock { font-size: 16px; font-weight: bold; }
+        
+        .user-avatar { 
+            width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--cyan); 
+            display: flex; justify-content: center; align-items: center; color: var(--cyan); 
+            background: var(--cyan-dim); box-shadow: 0 0 10px var(--cyan-dim);
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ----- MAIN GRID ----- */
+        .dashboard-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            gap: 15px;
+            padding: 15px;
+            min-height: 850px;
+            height: calc(100vh - 90px);
+        }
+
+        /* Panel Common */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-dim);
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Panel Corner Accents */
+        .panel::before, .panel::after { content: ''; position: absolute; width: 10px; height: 10px; border: 2px solid var(--cyan); opacity: 0.5; }
+        .panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+        .panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px;
+        }
+        .panel-title {
+            font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+            color: var(--text-main); text-transform: uppercase;
+        }
+        .panel-action { font-size: 10px; color: var(--cyan); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        /* LEFT COLUMN */
+        .col-left { display: flex; flex-direction: column; gap: 15px; }
+        
+        /* Radar */
+        .radar-panel { flex: 1.2; }
+        .radar-container { display: flex; gap: 20px; align-items: center; height: 100%; }
+        .radar-box {
+            width: 150px; height: 150px; border-radius: 50%;
+            border: 1px solid var(--cyan); position: relative;
+            background: 
+                linear-gradient(90deg, transparent 49.5%, var(--border-dim) 49.5%, var(--border-dim) 50.5%, transparent 50.5%),
+                linear-gradient(0deg, transparent 49.5%, var(--border-dim) 49.5%, var(--border-dim) 50.5%, transparent 50.5%),
+                radial-gradient(circle, var(--cyan-dim) 0%, transparent 70%);
+            box-shadow: 0 0 20px var(--cyan-dim) inset, 0 0 10px var(--cyan-dim);
+            overflow: hidden;
+        }
+        .radar-box::before { content: ''; position: absolute; top: 25px; left: 25px; right: 25px; bottom: 25px; border: 1px solid var(--border-dim); border-radius: 50%; }
+        .radar-box::after { content: ''; position: absolute; top: 50px; left: 50px; right: 50px; bottom: 50px; border: 1px solid var(--border-dim); border-radius: 50%; }
+        
+        .radar-sweep {
+            position: absolute; top: 0; left: 50%; width: 50%; height: 50%;
+            background: conic-gradient(from 0deg, transparent 70%, rgba(0, 229, 255, 0.8) 100%);
+            transform-origin: bottom left;
+            animation: radar-spin 4s linear infinite;
+        }
+        @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .blip { position: absolute; width: 6px; height: 6px; background: var(--red); border-radius: 50%; box-shadow: 0 0 8px var(--red); animation: blip-fade 4s infinite; display: flex; align-items: center; justify-content: flex-start; }
+        .blip-label { position: absolute; left: 10px; font-size: 8px; color: var(--red); font-family: var(--font-data); font-weight: bold; opacity: 0.8; }
+        .blip-1 { top: 30%; left: 60%; animation-delay: 1s; }
+        .blip-2 { top: 70%; left: 40%; animation-delay: 2.5s; }
+        .blip-3 { top: 50%; left: 20%; animation-delay: 3s; }
+        .blip-4 { top: 20%; left: 30%; animation-delay: 0.5s; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+        .blip-4 .blip-label { color: var(--cyan); }
+        .blip-5 { top: 80%; left: 75%; animation-delay: 1.5s; background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+        .blip-5 .blip-label { color: var(--yellow); }
+        @keyframes blip-fade { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0; transform: scale(1.5); } 100% { opacity: 0; transform: scale(1); } }
+
+        .radar-stats { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .stat-box { display: flex; flex-direction: column; }
+        .stat-box span { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
+        .stat-box .val { font-size: 22px; font-family: var(--font-data); font-weight: 700; line-height: 1; display: flex; align-items: baseline; gap: 8px; }
+        .stat-box .trend.up { font-size: 11px; color: var(--red); }
+        .stat-box .trend.down { font-size: 11px; color: var(--green); }
+
+        /* Biometric */
+        .bio-panel { flex: 1.5; }
+        .bio-container { display: flex; gap: 20px; align-items: flex-start; height: 100%; margin-top: 10px; }
+        .bio-face-wrapper {
+            position: relative; padding: 5px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .bio-face-wrapper::before, .bio-face-wrapper::after {
+            content: ''; position: absolute; width: 15px; height: 15px; border: 2px solid var(--cyan);
+        }
+        .bio-face-wrapper::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .bio-face-wrapper::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+        
+        .bio-face { 
+            width: 110px; height: 130px; border: 1px solid rgba(0, 229, 255, 0.3); 
+            background: rgba(0, 229, 255, 0.05); position: relative; 
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .bio-face::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 20%;
+            background: linear-gradient(180deg, transparent, var(--cyan), transparent);
+            animation: scanline 2s linear infinite; opacity: 0.5; z-index: 2;
+        }
+        @keyframes scanline { 0% { top: -20%; } 100% { top: 100%; } }
+        .bio-face i { display: none; }
+        .bio-face img {
+            width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 0;
+            opacity: 0.9;
+        }
+        .bio-heartbeat-line {
+            height: 25px; width: 110px; border-top: 1px solid rgba(0, 229, 255, 0.2); position: relative; overflow: hidden;
+        }
+        .bio-heartbeat-line::before {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline points="0,10 20,10 25,5 30,15 35,10 100,10" fill="none" stroke="%2300e5ff" stroke-width="1.5"/></svg>') no-repeat center;
+            background-size: 100% 100%; transform: translateY(-50%); animation: pulse-line 2s linear infinite;
+        }
+        @keyframes pulse-line { 0% { opacity: 0.3; } 50% { opacity: 1; filter: drop-shadow(0 0 2px var(--cyan)); } 100% { opacity: 0.3; } }
+        
+        .bio-metrics { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .bio-item { display: flex; align-items: center; gap: 15px; }
+        .bio-icon-wrapper { 
+            position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+        }
+        .bio-icon-wrapper::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px dashed var(--cyan); border-radius: 50%; opacity: 0.5; animation: spin-slow 10s linear infinite;
+        }
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+        .bio-icon { width: 26px; height: 26px; border-radius: 50%; background: var(--cyan-dim); border: 1px solid var(--cyan); display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 10px; }
+        .bio-text { display: flex; flex-direction: column; }
+        .bio-text span { font-size: 9px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .bio-text strong { font-size: 14px; font-family: var(--font-data); line-height: 1.2; }
+        .bio-text .status-ok { color: var(--green); font-size: 13px; font-family: var(--font-data); font-weight: 700; }
+
+        /* System Health */
+        .health-panel { flex: 0.8; }
+        .health-container { display: flex; justify-content: space-between; align-items: center; height: 100%; }
+        .health-ring { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .ring-circle { 
+            width: 55px; height: 55px; border-radius: 50%; 
+            border: 3px solid var(--cyan); border-left-color: rgba(0,229,255,0.2);
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-data); font-size: 14px; font-weight: bold;
+            box-shadow: 0 0 10px var(--cyan-dim);
+            transform: rotate(45deg);
+        }
+        .ring-circle span { transform: rotate(-45deg); }
+        .health-ring span.label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; }
+        .system-status-bar { margin-top: 15px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--green); }
+        
+        /* MIDDLE COLUMN */
+        .col-mid { display: flex; flex-direction: column; gap: 15px; }
+        .map-panel { flex: 2.5; padding: 0; position: relative; overflow: hidden; border: 1px solid var(--cyan-dim); box-shadow: 0 0 20px var(--cyan-dim) inset; }
+        .map-overlay-info { position: absolute; top: 15px; left: 15px; z-index: 2; pointer-events: none; }
+        .map-title { font-size: 14px; font-weight: bold; color: #fff; text-shadow: 0 0 5px var(--cyan); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .map-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: var(--red); border-radius: 50%; box-shadow: 0 0 8px var(--red); animation: blink 1s infinite; }
+        .map-time { font-family: var(--font-data); font-size: 12px; color: var(--cyan); margin-top: 5px; }
+        
+        .map-controls { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 2; }
+        .map-btn { padding: 4px 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--cyan); color: var(--cyan); font-size: 10px; cursor: pointer; border-radius: 4px; font-family: var(--font-ui); font-weight: bold; }
+        .map-btn.active { background: var(--cyan-dim); box-shadow: 0 0 8px var(--cyan-dim); }
+        
+        /* Threat Pins on Map */
+        .threat-pin { position: absolute; z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+        .pin-dot { width: 10px; height: 10px; background: var(--red); border-radius: 50%; box-shadow: 0 0 15px var(--red), 0 0 30px var(--red); animation: pulse 2s infinite; }
+        .pin-line { width: 1px; height: 30px; background: linear-gradient(var(--red), transparent); }
+        .pin-label { background: rgba(0,0,0,0.7); border: 1px solid var(--red); padding: 4px 8px; font-size: 9px; color: #fff; margin-top: 2px; border-radius: 2px; white-space: nowrap; box-shadow: 0 0 10px rgba(255,51,102,0.5); }
+        .pin-label strong { color: var(--red); }
+        
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+
+        /* Canvas Map Background */
+        #globeCanvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* Map Legend */
+        .map-legend { position: absolute; bottom: 15px; left: 15px; z-index: 2; display: flex; flex-direction: column; gap: 5px; font-size: 10px; background: rgba(0,0,0,0.6); padding: 8px; border: 1px solid var(--border-dim); border-radius: 4px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .l-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .activity-panel { flex: 1; }
+        .table-wrapper { width: 100%; overflow: auto; height: calc(100% - 25px); }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { text-align: left; padding: 8px 5px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; border-bottom: 1px solid var(--border-dim); font-size: 10px; }
+        td { padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.02); font-family: var(--font-data); }
+        .tr-hover:hover { background: rgba(0,229,255,0.05); }
+        
+        .td-type { display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-weight: 600; }
+        .td-type i { font-size: 12px; }
+        .td-desc { color: var(--text-dim); font-family: var(--font-ui); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* RIGHT COLUMN */
+        .col-right { display: flex; flex-direction: column; gap: 15px; }
+        
+        /* Score */
+        .score-panel { flex: 1.2; }
+        .score-container { display: flex; gap: 20px; align-items: center; height: 100%; }
+        .score-circle { 
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 6px solid var(--red); border-right-color: rgba(255,51,102,0.2);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 0 20px rgba(255,51,102,0.4); transform: rotate(45deg);
+        }
+        .score-inner { transform: rotate(-45deg); text-align: center; }
+        .score-val { font-size: 40px; font-weight: bold; font-family: var(--font-data); line-height: 1; color: #fff; }
+        .score-max { font-size: 14px; color: var(--text-dim); }
+        .score-label { transform: rotate(-45deg); margin-top: 15px; font-size: 12px; color: var(--red); font-weight: bold; letter-spacing: 1px; }
+
+        .score-bars { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+        .bar-group { display: flex; flex-direction: column; gap: 4px; }
+        .bar-header { display: flex; justify-content: space-between; font-size: 11px; }
+        .bar-header span { color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
+        .bar-header strong { font-family: var(--font-data); }
+        .bar-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 2px; box-shadow: 0 0 5px currentColor; }
+        
+        /* Firewall */
+        .firewall-panel { flex: 1.5; }
+        .fw-list { display: flex; flex-direction: column; gap: 12px; height: 100%; overflow-y: auto; }
+        .fw-item { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .fw-icon { width: 28px; height: 28px; border-radius: 4px; background: var(--cyan-dim); border: 1px solid var(--cyan); display: flex; justify-content: center; align-items: center; color: var(--cyan); font-size: 12px; flex-shrink: 0; }
+        .fw-content { flex: 1; }
+        .fw-title { font-size: 12px; color: var(--text-main); margin-bottom: 2px; }
+        .fw-time { font-size: 10px; color: var(--text-dim); font-family: var(--font-data); }
+        .fw-status { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--green); font-weight: 600; margin-left: auto; }
+        
+        /* AI Assistant */
+        .ai-panel { flex: 1; }
+        .ai-container { display: flex; flex-direction: column; height: 100%; }
+        .ai-chat-area { flex: 1; display: flex; gap: 12px; margin-bottom: 15px; }
+        .ai-chat-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--cyan); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--cyan); box-shadow: 0 0 15px var(--cyan-dim); flex-shrink: 0; }
+        .ai-chat-msg { background: rgba(0,229,255,0.05); border: 1px solid var(--border-dim); padding: 10px; border-radius: 0 8px 8px 8px; font-size: 11.5px; line-height: 1.5; color: var(--text-main); }
+        .ai-chat-msg strong { color: var(--cyan); display: block; margin-bottom: 4px; font-family: var(--font-title); letter-spacing: 1px; font-size: 10px; }
+        
+        .ai-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+        .ai-btn { flex: 1; padding: 8px 0; background: transparent; border: 1px solid var(--cyan); border-radius: 4px; color: var(--cyan); font-family: var(--font-ui); font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .ai-btn:hover { background: var(--cyan-dim); box-shadow: 0 0 10px var(--cyan-dim); }
+        
+        .ai-input-box { display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid var(--border-dim); border-radius: 4px; padding: 0 10px; height: 36px; }
+        .ai-input-box input { flex: 1; background: transparent; border: none; color: #fff; font-family: var(--font-ui); font-size: 12px; outline: none; }
+        .ai-input-box i { color: var(--cyan); font-size: 14px; cursor: pointer; }
+
+        /* ----- FOOTER ----- */
+        footer {
+            height: 30px; border-top: 1px solid var(--border-dim); background: rgba(5,10,20,0.9);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 20px;
+            font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .footer-left { display: flex; gap: 15px; }
+        .footer-left strong { color: var(--text-main); }
+        
+        .footer-mid { display: flex; gap: 20px; }
+        .f-stat { display: flex; align-items: center; gap: 6px; }
+        .f-stat i { font-size: 8px; }
+        
+        .footer-right { color: var(--cyan); opacity: 0.7; }
+
+        /* UTILS */
+        .txt-red { color: var(--red); }
+        .txt-green { color: var(--green); }
+        .txt-yellow { color: var(--yellow); }
+        .txt-cyan { color: var(--cyan); }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <i class="fa-solid fa-layer-group logo-icon"></i>
+            <div class="logo-text">
+                <h1>PROJECT ULTRON</h1>
+                <p>AI Powered Cybersecurity Command Center</p>
+            </div>
+        </div>
+        
+        <nav class="header-nav">
+            <a href="index.html" class="nav-link active"><i class="fa-solid fa-border-all"></i> OVERVIEW</a>
+            <a href="threat_map.html" class="nav-link "><i class="fa-solid fa-map-location-dot"></i> THREAT MAP</a>
+            <a href="sensors.html" class="nav-link "><i class="fa-solid fa-tower-broadcast"></i> SENSORS</a>
+            <a href="reasoning.html" class="nav-link "><i class="fa-solid fa-brain"></i> REASONING</a>
+            <a href="response.html" class="nav-link "><i class="fa-solid fa-shield-halved"></i> RESPONSE</a>
+            <a href="ultron.html" class="nav-link "><i class="fa-solid fa-microphone-lines"></i> AI CORE</a>
+        </nav>
+
+        <div class="header-right">
+            <div class="ai-status">
+                <div class="ai-status-text">
+                    <span class="ai-status-title">ULTRON AI</span>
+                    <span class="status-indicator"><div class="dot"></div> Online</span>
+                </div>
+            </div>
+            <div class="time-box">
+                <div class="time-date">Apr 26, 2025</div>
+                <div class="time-clock">14:37:28 UTC</div>
+            </div>
+            <div class="user-avatar">
+                <i class="fa-regular fa-user"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard-container">
+        
+        <!-- Left Column -->
+        <div class="col-left">
+            <!-- Radar Panel -->
+            <div class="panel radar-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Global Threat Radar</div>
+                    <div class="panel-action txt-red"><div class="dot" style="background:var(--red);box-shadow:0 0 5px var(--red)"></div> LIVE</div>
+                </div>
+                <div class="radar-container">
+                    <div class="radar-box">
+                        <div class="radar-sweep"></div>
+                        <div class="blip blip-1"><span class="blip-label">RU</span></div>
+                        <div class="blip blip-2"><span class="blip-label">CN</span></div>
+                        <div class="blip blip-3"><span class="blip-label">IN</span></div>
+                        <div class="blip blip-4"><span class="blip-label">US</span></div>
+                        <div class="blip blip-5"><span class="blip-label">BR</span></div>
+                    </div>
+                    <div class="radar-stats">
+                        <div class="stat-box">
+                            <span>Total Threats</span>
+                            <div class="val">47 <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 12%</span></div>
+                        </div>
+                        <div class="stat-box">
+                            <span>Blocked</span>
+                            <div class="val">42 <span class="trend down"><i class="fa-solid fa-arrow-up"></i> 8%</span></div>
+                        </div>
+                        <div class="stat-box">
+                            <span>Under Analysis</span>
+                            <div class="val txt-yellow">5 <span class="trend up" style="color:var(--yellow)"><i class="fa-solid fa-arrow-down"></i> 2%</span></div>
+                        </div>
+                        <div class="stat-box">
+                            <span>Critical</span>
+                            <div class="val txt-red">3 <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 1%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biometric Scan Panel -->
+            <div class="panel bio-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Biometric Scan</div>
+                    <div class="panel-action">Scan Status: <span class="txt-cyan">ACTIVE</span></div>
+                </div>
+                <div class="bio-container">
+                    <div class="bio-face-wrapper">
+                        <div class="bio-face">
+                            <img src="wireframe_face.jpg" alt="Biometric Wireframe Face">
+                        </div>
+                        <div class="bio-heartbeat-line"></div>
+                    </div>
+                    <div class="bio-metrics">
+                        <div class="bio-item">
+                            <div class="bio-icon-wrapper">
+                                <div class="bio-icon"><i class="fa-solid fa-expand"></i></div>
+                            </div>
+                            <div class="bio-text">
+                                <span>Face Recognition</span>
+                                <strong class="status-ok">Verified</strong>
+                            </div>
+                        </div>
+                        <div class="bio-item">
+                            <div class="bio-icon-wrapper">
+                                <div class="bio-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                            </div>
+                            <div class="bio-text">
+                                <span>Heart Rate</span>
+                                <strong>72 BPM</strong>
+                            </div>
+                        </div>
+                        <div class="bio-item">
+                            <div class="bio-icon-wrapper">
+                                <div class="bio-icon"><i class="fa-solid fa-temperature-half"></i></div>
+                            </div>
+                            <div class="bio-text">
+                                <span>Body Temp</span>
+                                <strong>36.6°C</strong>
+                            </div>
+                        </div>
+                        <div class="bio-item">
+                            <div class="bio-icon-wrapper">
+                                <div class="bio-icon"><i class="fa-solid fa-wave-square"></i></div>
+                            </div>
+                            <div class="bio-text">
+                                <span>Stress Level</span>
+                                <strong class="status-ok">Low</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health Panel -->
+            <div class="panel health-panel">
+                <div class="panel-header" style="margin-bottom: 5px;">
+                    <div class="panel-title">System Health</div>
+                </div>
+                <div class="health-container">
+                    <div class="health-ring">
+                        <div class="ring-circle"><span>98%</span></div>
+                        <span class="label">CPU</span>
+                    </div>
+                    <div class="health-ring">
+                        <div class="ring-circle"><span>96%</span></div>
+                        <span class="label">Memory</span>
+                    </div>
+                    <div class="health-ring">
+                        <div class="ring-circle" style="border-color: var(--cyan);"><span>99%</span></div>
+                        <span class="label">Network</span>
+                    </div>
+                    <div class="health-ring">
+                        <div class="ring-circle"><span>97%</span></div>
+                        <span class="label">Storage</span>
+                    </div>
+                </div>
+                <div class="system-status-bar">
+                    <div class="dot"></div> All systems operational
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column -->
+        <div class="col-mid">
+            <!-- Global Map Panel -->
+            <div class="panel map-panel">
+                <div class="map-overlay-info">
+                    <div class="map-title">LIVE GLOBAL THREAT MAP</div>
+                    <div class="map-time">14:37:28 UTC</div>
+                </div>
+                <div class="map-controls">
+                    <div class="map-btn">2D</div>
+                    <div class="map-btn active">3D</div>
+                    <div class="map-btn"><i class="fa-solid fa-crosshairs"></i></div>
+                    <div class="map-btn"><i class="fa-solid fa-expand"></i></div>
+                </div>
+                
+                <!-- Dynamic Threat Pins will be handled by Globe.gl -->
+
+                <div class="map-legend">
+                    <div class="legend-item"><div class="l-dot" style="background:var(--red)"></div> Attack Origin</div>
+                    <div class="legend-item"><div class="l-dot" style="background:var(--yellow)"></div> Threat Target</div>
+                    <div class="legend-item"><div class="l-dot" style="background:var(--cyan)"></div> Firewall Blocked</div>
+                    <div class="legend-item"><div class="l-dot" style="background:var(--purple)"></div> Known Malicious IP</div>
+                </div>
+
+                <!-- Globe.gl Container -->
+                <div id="globeViz" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
+            </div>
+
+            <!-- Recent Activity Panel -->
+            <div class="panel activity-panel">
+                <div class="panel-header" style="margin-bottom: 10px;">
+                    <div class="panel-title">Recent Threat Activity</div>
+                    <div class="panel-action">View All <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Threat</th>
+                                <th>Description</th>
+                                <th>Origin</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="tr-hover">
+                                <td>14:36</td>
+                                <td class="td-type txt-red"><i class="fa-solid fa-bug"></i> Malware</td>
+                                <td class="td-desc">Trojan detected in outbound connection</td>
+                                <td>Russia</td>
+                                <td class="txt-red"><div class="dot" style="display:inline-block; background:var(--red); box-shadow:none;"></div> Blocked</td>
+                            </tr>
+                            <tr class="tr-hover">
+                                <td>14:32</td>
+                                <td class="td-type txt-yellow"><i class="fa-solid fa-network-wired"></i> DDoS</td>
+                                <td class="td-desc">Large scale DDoS attack (1.2 Tbps)</td>
+                                <td>Brazil</td>
+                                <td class="txt-green"><div class="dot" style="display:inline-block; background:var(--green); box-shadow:none;"></div> Mitigated</td>
+                            </tr>
+                            <tr class="tr-hover">
+                                <td>14:28</td>
+                                <td class="td-type txt-red"><i class="fa-solid fa-envelope-open-text"></i> Phishing</td>
+                                <td class="td-desc">Suspicious email campaign detected</td>
+                                <td>India</td>
+                                <td class="txt-yellow"><div class="dot" style="display:inline-block; background:var(--yellow); box-shadow:none;"></div> Quarantined</td>
+                            </tr>
+                            <tr class="tr-hover">
+                                <td>14:21</td>
+                                <td class="td-type txt-red"><i class="fa-solid fa-server"></i> C2</td>
+                                <td class="td-desc">C2 communication from infected host</td>
+                                <td>China</td>
+                                <td class="txt-red"><div class="dot" style="display:inline-block; background:var(--red); box-shadow:none;"></div> Blocked</td>
+                            </tr>
+                            <tr class="tr-hover">
+                                <td>14:15</td>
+                                <td class="td-type txt-cyan"><i class="fa-solid fa-magnifying-glass"></i> Port Scan</td>
+                                <td class="td-desc">Port scanning activity detected</td>
+                                <td>US</td>
+                                <td class="txt-cyan"><div class="dot" style="display:inline-block; background:var(--cyan); box-shadow:none;"></div> Analyzing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-right">
+            <!-- AI Threat Score -->
+            <div class="panel score-panel">
+                <div class="panel-header">
+                    <div class="panel-title">AI Threat Score</div>
+                </div>
+                <div class="score-container">
+                    <div class="score-circle">
+                        <div class="score-inner">
+                            <div class="score-val">8.7</div>
+                            <div class="score-max">/10</div>
+                        </div>
+                        <div class="score-label">HIGH RISK</div>
+                    </div>
+                    <div class="score-bars">
+                        <div class="bar-header" style="margin-bottom: 5px;"><strong class="txt-main" style="color:white;">AI ANALYSIS</strong></div>
+                        <div class="bar-group">
+                            <div class="bar-header"><span><i class="fa-regular fa-circle-xmark txt-red"></i> Malware Probability</span> <strong class="txt-red">92%</strong></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 92%; background: var(--red); color: var(--red)"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-header"><span><i class="fa-solid fa-eye txt-red"></i> Unusual Behavior</span> <strong class="txt-red">87%</strong></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 87%; background: var(--red); color: var(--red)"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-header"><span><i class="fa-solid fa-triangle-exclamation txt-red"></i> Network Anomaly</span> <strong class="txt-red">76%</strong></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 76%; background: var(--red); color: var(--red)"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-header"><span><i class="fa-solid fa-database txt-red"></i> Data Exfiltration Risk</span> <strong class="txt-red">68%</strong></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 68%; background: var(--red); color: var(--red)"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-header"><span><i class="fa-solid fa-user-secret txt-green"></i> Insider Threat</span> <strong class="txt-green">21%</strong></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 21%; background: var(--green); color: var(--green)"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firewall Containment -->
+            <div class="panel firewall-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Firewall Containment</div>
+                    <div class="panel-action txt-green"><i class="fa-solid fa-shield"></i> ACTIVE</div>
+                </div>
+                <div class="fw-list">
+                    <div class="fw-item">
+                        <div class="fw-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="fw-content">
+                            <div class="fw-title">Blocked Malicious IP (185.199.110.23)</div>
+                            <div class="fw-time">2m ago</div>
+                        </div>
+                        <div class="fw-status"><i class="fa-solid fa-check"></i> Success</div>
+                    </div>
+                    <div class="fw-item">
+                        <div class="fw-icon"><i class="fa-solid fa-stop"></i></div>
+                        <div class="fw-content">
+                            <div class="fw-title">Terminated Suspicious Process (xmrig.exe)</div>
+                            <div class="fw-time">4m ago</div>
+                        </div>
+                        <div class="fw-status"><i class="fa-solid fa-check"></i> Success</div>
+                    </div>
+                    <div class="fw-item">
+                        <div class="fw-icon"><i class="fa-solid fa-file-shield"></i></div>
+                        <div class="fw-content">
+                            <div class="fw-title">Quarantined Infected File (invoice.pdf)</div>
+                            <div class="fw-time">6m ago</div>
+                        </div>
+                        <div class="fw-status"><i class="fa-solid fa-check"></i> Success</div>
+                    </div>
+                    <div class="fw-item">
+                        <div class="fw-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+                        <div class="fw-content">
+                            <div class="fw-title">Updated Firewall Rules (Auto)</div>
+                            <div class="fw-time">8m ago</div>
+                        </div>
+                        <div class="fw-status"><i class="fa-solid fa-check"></i> Success</div>
+                    </div>
+                    <div class="fw-item">
+                        <div class="fw-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                        <div class="fw-content">
+                            <div class="fw-title">Isolated Host (DESKTOP-742)</div>
+                            <div class="fw-time">12m ago</div>
+                        </div>
+                        <div class="fw-status"><i class="fa-solid fa-check"></i> Success</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Assistant -->
+            <div class="panel ai-panel">
+                <div class="panel-header" style="margin-bottom: 10px;">
+                    <div class="panel-title">AI Assistant</div>
+                </div>
+                <div class="ai-container">
+                    <div class="ai-chat-area">
+                        <div class="ai-chat-icon"><i class="fa-brands fa-connectdevelop"></i></div>
+                        <div class="ai-chat-msg">
+                            <strong>ULTRON</strong>
+                            Threat level in the Asia region has increased by 37% in the last 10 minutes. I recommend activating additional firewall rules and monitoring the China and India nodes closely.
+                        </div>
+                    </div>
+                    <div class="ai-actions">
+                        <button class="ai-btn">Run Full Scan</button>
+                        <button class="ai-btn">Generate Report</button>
+                    </div>
+                    <div class="ai-input-box">
+                        <input type="text" id="ai-chat-input" placeholder="Ask Ultron anything...">
+                        <i class="fa-solid fa-microphone" id="ai-mic-btn" style="color:var(--cyan); cursor:pointer; margin-right:10px; font-size:16px;" title="Speak to Ultron"></i>
+                        <i class="fa-regular fa-paper-plane" id="ai-send-btn" style="cursor:pointer;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Voice AI Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatInput = document.getElementById('ai-chat-input');
+            const micBtn = document.getElementById('ai-mic-btn');
+            const sendBtn = document.getElementById('ai-send-btn');
+            const chatMsgBox = document.querySelector('.ai-chat-msg');
+            
+            // Text to speech setup
+            const synth = window.speechSynthesis;
+            function speak(text) {
+                if (synth.speaking) {
+                    console.error('speechSynthesis.speaking');
+                    return;
+                }
+                const utterThis = new SpeechSynthesisUtterance(text);
+                utterThis.rate = 1.1;
+                utterThis.pitch = 0.9;
+                
+                // Try to find a good voice
+                let voices = synth.getVoices();
+                if(voices.length) {
+                    let bestVoice = voices.find(v => v.name.includes('Google UK English Male') || v.name.includes('Microsoft Mark') || v.name.includes('English'));
+                    if(bestVoice) utterThis.voice = bestVoice;
+                }
+                synth.speak(utterThis);
+            }
+
+            // Speech to text setup
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                
+                recognition.onstart = function() {
+                    micBtn.style.color = 'var(--red)';
+                    micBtn.classList.add('fa-beat-fade');
+                };
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    chatInput.value = transcript;
+                    sendMessage(transcript);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error("Speech error:", event.error);
+                    micBtn.style.color = 'var(--cyan)';
+                    micBtn.classList.remove('fa-beat-fade');
+                };
+                
+                recognition.onend = function() {
+                    micBtn.style.color = 'var(--cyan)';
+                    micBtn.classList.remove('fa-beat-fade');
+                };
+            }
+
+            micBtn.addEventListener('click', () => {
+                if (recognition) {
+                    try { recognition.start(); } catch(e) { console.log(e); }
+                } else {
+                    alert("Speech recognition not supported in this browser.");
+                }
+            });
+
+            sendBtn.addEventListener('click', () => {
+                const text = chatInput.value.trim();
+                if (text) sendMessage(text);
+            });
+            
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const text = chatInput.value.trim();
+                    if (text) sendMessage(text);
+                }
+            });
+
+            async function sendMessage(text) {
+                chatInput.value = "";
+                chatInput.placeholder = "Ultron is thinking...";
+                
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: text })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.reply) {
+                        chatMsgBox.innerHTML = `<strong>ULTRON</strong>${data.reply}`;
+                        if (data.voice_brief) {
+                            speak(data.voice_brief);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error communicating with Ultron:", error);
+                } finally {
+                    chatInput.placeholder = "Ask Ultron anything...";
+                }
+            }
+        });
+    </script>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-left">
+            <span><strong>PROJECT ULTRON</strong> v1.0.0</span>
+            <span>"Smarter Defense. Safer Tomorrow."</span>
+        </div>
+        <div class="footer-mid">
+            <div class="f-stat"><i class="fa-solid fa-circle txt-red"></i> <span class="txt-red">Threats 47</span></div>
+            <div class="f-stat"><i class="fa-solid fa-circle txt-green"></i> <span class="txt-green">Blocked 42</span></div>
+            <div class="f-stat"><i class="fa-solid fa-circle txt-yellow"></i> <span class="txt-yellow">Under Analysis 5</span></div>
+            <div class="f-stat"><i class="fa-solid fa-circle txt-red"></i> <span class="txt-red">Critical 3</span></div>
+        </div>
+        <div class="footer-right">
+            Powered by Advanced AI | Quantum Security Protocols
+        </div>
+    </footer>
+
+    <!-- Globe.gl Script -->
+    <script src="//unpkg.com/globe.gl"></script>
+    <script>
+        // Threat Connections (Arcs)
+        const arcsData = [
+            { startLat: 39.9042, startLng: 116.4074, endLat: 37.0902, endLng: -95.7129, color: ['#ff3366', '#ff3366'] }, // China to US
+            { startLat: 55.7558, startLng: 37.6173, endLat: 52.5200, endLng: 13.4050, color: ['#ff3366', '#ff3366'] }, // Russia to Europe
+            { startLat: -14.2350, startLng: -51.9253, endLat: 48.8566, endLng: 2.3522, color: ['#ffd600', '#ffd600'] }, // Brazil to Europe
+            { startLat: 20.5937, startLng: 78.9629, endLat: 35.6895, endLng: 139.6917, color: ['#ff3366', '#ff3366'] } // India to Japan
+        ];
+
+        // Threat Origins (Rings)
+        const ringsData = [
+            { lat: 39.9042, lng: 116.4074, color: '#ff3366' }, // China
+            { lat: 55.7558, lng: 37.6173, color: '#ff3366' }, // Russia
+            { lat: -14.2350, lng: -51.9253, color: '#ffd600' }, // Brazil
+            { lat: 20.5937, lng: 78.9629, color: '#ff3366' }, // India
+            { lat: 37.0902, lng: -95.7129, color: '#00e5ff' } // US
+        ];
+
+        // Country Name Labels
+        const countryLabels = [
+            { lat: 39.9, lng: 116.4, name: 'CHINA', size: 1.5, color: '#00e5ff' },
+            { lat: 37.0, lng: -95.7, name: 'UNITED STATES', size: 1.5, color: '#00e5ff' },
+            { lat: 61.5, lng: 105.3, name: 'RUSSIA', size: 1.5, color: '#00e5ff' },
+            { lat: 20.5, lng: 78.9, name: 'INDIA', size: 1.5, color: '#00e5ff' },
+            { lat: -14.2, lng: -51.9, name: 'BRAZIL', size: 1.5, color: '#00e5ff' },
+            { lat: 51.5, lng: -0.1, name: 'UK', size: 1.2, color: '#00e5ff' },
+            { lat: 48.8, lng: 2.3, name: 'FRANCE', size: 1.2, color: '#00e5ff' },
+            { lat: -25.2, lng: 133.2, name: 'AUSTRALIA', size: 1.5, color: '#00e5ff' },
+            { lat: 56.1, lng: -106.3, name: 'CANADA', size: 1.5, color: '#00e5ff' },
+            { lat: -30.5, lng: 22.9, name: 'SOUTH AFRICA', size: 1.5, color: '#00e5ff' },
+            { lat: 36.2, lng: 138.2, name: 'JAPAN', size: 1.2, color: '#00e5ff' },
+            { lat: 51.1, lng: 10.4, name: 'GERMANY', size: 1.2, color: '#00e5ff' }
+        ];
+
+        const globeViz = document.getElementById('globeViz');
+        
+        // Threat HTML Pins
+        const threatPinsData = [
+            { lat: 61.5, lng: 105.3, country: 'RUSSIA', desc: 'Missile Launch Detected', level: 'CRITICAL', color: 'var(--red)', class: 'txt-red' },
+            { lat: 39.9, lng: 116.4, country: 'CHINA', desc: 'Malware C2 Communication', level: 'HIGH', color: 'var(--red)', class: 'txt-red' },
+            { lat: 20.5, lng: 78.9, country: 'INDIA', desc: 'Phishing Campaign', level: 'HIGH', color: 'var(--red)', class: 'txt-red' },
+            { lat: -14.2, lng: -51.9, country: 'BRAZIL', desc: 'DDoS Attack in Progress', level: 'MEDIUM', color: 'var(--yellow)', class: 'txt-yellow' },
+            { lat: 37.0, lng: -95.7, country: 'UNITED STATES', desc: 'Blocked Exploit Attempt', level: 'BLOCKED', color: 'var(--cyan)', class: 'txt-cyan' }
+        ];
+
+        const myGlobe = Globe()
+            (globeViz)
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+            .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+            .backgroundColor('rgba(0,0,0,0)')
+            .showAtmosphere(true)
+            .atmosphereColor('#00e5ff')
+            .atmosphereAltitude(0.15)
+            .arcsData(arcsData)
+            .arcColor('color')
+            .arcDashLength(0.4)
+            .arcDashGap(0.2)
+            .arcDashAnimateTime(1500)
+            .ringsData(ringsData)
+            .ringColor('color')
+            .ringMaxRadius(4)
+            .ringPropagationSpeed(2)
+            .ringRepeatPeriod(1000)
+            .htmlElementsData(threatPinsData)
+            .htmlElement(d => {
+                const el = document.createElement('div');
+                el.className = 'threat-pin';
+                // Adjust position so it doesn't block interactions if not needed
+                el.style.pointerEvents = 'none';
+                el.innerHTML = `
+                    <div class="pin-dot" style="background:${d.color}; box-shadow: 0 0 15px ${d.color}"></div>
+                    <div class="pin-line" style="background: linear-gradient(${d.color}, transparent);"></div>
+                    <div class="pin-label" style="border-color:${d.color};"><strong>${d.country}</strong><br>${d.desc}<br>Threat Level: <span class="${d.class}">${d.level}</span></div>
+                `;
+                return el;
+            })
+            .labelsData(countryLabels)
+            .labelLat('lat')
+            .labelLng('lng')
+            .labelText('name')
+            .labelSize('size')
+            .labelDotRadius(0.5)
+            .labelColor('color')
+            .labelResolution(2);
+
+        // Fetch GeoJSON for country borders
+        fetch('//unpkg.com/globe.gl/example/datasets/ne_110m_admin_0_countries.geojson')
+            .then(res => res.json())
+            .then(countries => {
+                myGlobe.polygonsData(countries.features)
+                    .polygonCapColor(() => 'rgba(0, 0, 0, 0.1)')
+                    .polygonSideColor(() => 'rgba(0, 229, 255, 0.05)')
+                    .polygonStrokeColor(() => 'rgba(0, 229, 255, 0.4)');
+            });
+
+        // Adjust camera controls
+        myGlobe.controls().autoRotate = true;
+        myGlobe.controls().autoRotateSpeed = 1.0;
+        myGlobe.pointOfView({ altitude: 2.2 });
+        
+        // Handle responsive resize
+        window.addEventListener('resize', () => {
+            if (globeViz.clientWidth && globeViz.clientHeight) {
+                myGlobe.width(globeViz.clientWidth);
+                myGlobe.height(globeViz.clientHeight);
+            }
+        });
+        
+        // Initial sizing delay to allow DOM to render
+        setTimeout(() => {
+            myGlobe.width(globeViz.clientWidth);
+            myGlobe.height(globeViz.clientHeight);
+        }, 100);
+        
+        // --- INTERACTIVE FEATURES ---
+        
+        // Map Toggles
+        const mapBtns = document.querySelectorAll('.map-btn');
+        if(mapBtns.length >= 2) {
+            mapBtns[0].addEventListener('click', function() {
+                mapBtns.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                window.location.href = 'threat_map.html'; // Go to 2D
+            });
+            mapBtns[1].addEventListener('click', function() {
+                mapBtns.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        }
+        
+        // Simulation Engine
+        const threatLocations = [
+            { lat: 46.22, lng: 2.21, name: 'FRANCE', desc: 'SQL Injection Attempt', type: 'Malware' },
+            { lat: 36.20, lng: 138.25, name: 'JAPAN', desc: 'DDoS Activity', type: 'DDoS' },
+            { lat: -25.27, lng: 133.77, name: 'AUSTRALIA', desc: 'Zero-Day Exploit', type: 'Exploit' },
+            { lat: 56.13, lng: -106.34, name: 'CANADA', desc: 'Ransomware Payload', type: 'Ransomware' },
+            { lat: 55.37, lng: -3.43, name: 'UK', desc: 'Brute Force SSH', type: 'Intrusion' },
+            { lat: -30.55, lng: 22.93, name: 'SOUTH AFRICA', desc: 'Port Scan Sweep', type: 'Recon' }
+        ];
+        
+        const hostLocation = { lat: 20.5, lng: 78.9, name: 'INDIA' }; // Protected host
+        
+        const activityTbody = document.querySelector('.table-wrapper tbody');
+        let totalThreats = 47;
+        const threatsCounter = document.querySelector('.f-stat:nth-child(1) span');
+        
+        setInterval(() => {
+            const loc = threatLocations[Math.floor(Math.random() * threatLocations.length)];
+            
+            // Add new connection to globe
+            arcsData.push({
+                startLat: loc.lat, startLng: loc.lng,
+                endLat: hostLocation.lat, endLng: hostLocation.lng,
+                color: ['#ff3366', '#ff3366']
+            });
+            ringsData.push({ lat: loc.lat, lng: loc.lng, color: '#ff3366' });
+            
+            // Limit array size to prevent lag
+            if(arcsData.length > 15) arcsData.shift();
+            if(ringsData.length > 15) ringsData.shift();
+            
+            // Add a new threat pin temporarily
+            const newPin = { lat: loc.lat, lng: loc.lng, country: loc.name, desc: loc.desc, level: 'HIGH', color: 'var(--red)', class: 'txt-red' };
+            threatPinsData.push(newPin);
+            if(threatPinsData.length > 10) threatPinsData.shift();
+            
+            myGlobe.arcsData(arcsData)
+                   .ringsData(ringsData)
+                   .htmlElementsData(threatPinsData);
+            
+            // Update Table
+            if(activityTbody) {
+                const now = new Date();
+                const timeStr = now.getUTCHours().toString().padStart(2, '0') + ':' + now.getUTCMinutes().toString().padStart(2, '0');
+                
+                const tr = document.createElement('tr');
+                tr.className = 'tr-hover';
+                tr.style.animation = 'fadein 0.5s ease-in';
+                tr.innerHTML = `
+                    <td>${timeStr}</td>
+                    <td class="td-type txt-red"><i class="fa-solid fa-bug"></i> ${loc.type}</td>
+                    <td class="td-desc">${loc.desc}</td>
+                    <td>${loc.name}</td>
+                    <td class="txt-red"><div class="dot" style="display:inline-block; background:var(--red); box-shadow:none;"></div> Blocked</td>
+                `;
+                activityTbody.prepend(tr);
+                if(activityTbody.children.length > 5) {
+                    activityTbody.removeChild(activityTbody.lastChild);
+                }
+            }
+            
+            // Update Footer Counter
+            totalThreats++;
+            if(threatsCounter) threatsCounter.textContent = `Threats ${totalThreats}`;
+            
+        }, 4000); // 4 seconds
+    </script>
+</body>
+</html>
